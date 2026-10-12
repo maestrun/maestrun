@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "stages": [
+    {
+      "id": "planning",
+      "executor": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh"
+    },
+    {
+      "id": "implementation",
+      "executor": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh"
+    },
+    {
+      "id": "testing",
+      "executor": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh"
+    },
+    {
+      "id": "qa",
+      "executor": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh"
+    },
+    {
+      "id": "review",
+      "executor": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh"
+    }
+  ],
+  "execution": {
+    "mode": "sequential",
+    "concurrency": 1,
+    "background": false
+  }
+}

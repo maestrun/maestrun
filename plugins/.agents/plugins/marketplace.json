@@ -1,0 +1,10 @@
+{
+  "name": "maestrun-local",
+  "interface": { "displayName": "Maestrun local plugins" },
+  "plugins": [{
+    "name": "maestrun",
+    "source": { "source": "local", "path": "./maestrun" },
+    "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+    "category": "Productivity"
+  }]
+}

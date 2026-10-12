@@ -1,0 +1,66 @@
+{
+  "name": "maestrun",
+  "version": "0.1.0",
+  "license": "SUL-1.0",
+  "description": "Guided workflows, planning and task execution with Codex, Claude Code, GitHub Copilot CLI, and Grok Build",
+  "homepage": "https://github.com/maestrun/maestrun#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maestrun/maestrun.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maestrun/maestrun/issues"
+  },
+  "type": "module",
+  "bin": {
+    "maestrun": "dist/main.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CONTRIBUTING.md",
+    "docs",
+    "plugins",
+    "examples/qa-refactor/plan.md",
+    "examples/simple/plan.md",
+    "examples/advanced/plan.md",
+    "scripts/install.mjs"
+  ],
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
+  },
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "prebuild": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/main.js', 0o755)\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format:check": "prettier --check src tests *.json *.mjs *.ts README.md CONTRIBUTING.md docs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "prepack": "npm run build",
+    "preinstall": "node scripts/install.mjs",
+    "release:pack": "npm run check && npm test && npm pack"
+  },
+  "dependencies": {
+    "@inquirer/core": "^12.0.4",
+    "@inquirer/prompts": "^8.7.3",
+    "chalk": "^6.0.1",
+    "commander": "^15.0.0",
+    "ora": "^9.4.1",
+    "string-width": "^8.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

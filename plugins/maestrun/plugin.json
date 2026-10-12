@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "maestrun",
+  "version": "0.1.0",
+  "description": "Execute and inspect programming workflows with Maestrun"
+}

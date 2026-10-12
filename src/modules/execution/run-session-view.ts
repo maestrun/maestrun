@@ -1,0 +1,59 @@
+import type { RunReport } from "../../contracts/run.js";
+import { createRunView } from "./run-view.js";
+import { stateLine } from "./run-report.repository.js";
+import { sessionReport } from "./run-session.repository.js";
+import { readConversation } from "./task-conversation.repository.js";
+import { taskInstructions } from "./task-instructions.js";
+
+import type { SessionView } from "./execution.types.js";
+
+export function openSessionView(state: SessionView): void {
+  if (!state.report || state.view || state.choosing || state.detached || state.closed) return;
+  state.selection ??= {
+    filter: 0,
+    selected: state.report.tasks[0]?.id ?? "",
+    details: false,
+    scroll: 0,
+  };
+  const view = createRunView(state.report, state.cwd, {
+    selection: state.selection,
+    input: process.stdin,
+    output: process.stdout,
+    ...(state.notice ? { notice: state.notice } : {}),
+    onInstructions: (task) => taskInstructions(state, task),
+    onClose: () => {
+      state.closed = true;
+    },
+  });
+  if (view) state.view = view;
+}
+
+export function closeSessionView(state: SessionView): void {
+  state.view?.close();
+  delete state.view;
+}
+
+export async function refreshSessionView(state: SessionView): Promise<void> {
+  const report = await sessionReport(state.cwd, state.session);
+  if (!report) return;
+  await Promise.all(
+    report.tasks.map(async (task) => {
+      if (!task.conversationId) return;
+      const conversation = await readConversation(state.cwd, task.conversationId);
+      if (conversation) task.conversation = conversation;
+    }),
+  );
+  if (state.report) Object.assign(state.report, report);
+  else state.report = report;
+  openSessionView(state);
+  if (state.view) state.view.update();
+  else if (!state.choosing) logUpdates(state, report);
+}
+
+function logUpdates(state: SessionView, report: RunReport): void {
+  for (const task of report.tasks) {
+    const line = stateLine(task);
+    if (state.lines.get(task.id) !== line) state.ui.log(line);
+    state.lines.set(task.id, line);
+  }
+}

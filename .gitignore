@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+.env
+.env.*
+/.agents/
+/.maestrun/
+/SECURITY_COVERAGE.json
+/SECURITY_FINDINGS.json
+/SECURITY_REPORT.md
+/SECURITY_RESULTS.sarif
+/SECURITY_THREAT_MODEL.md
