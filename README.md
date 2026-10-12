@@ -138,6 +138,12 @@ maestrun sample advanced # 3 tasks: parallel execution, QA repair, and integrati
 
 Each run creates a separate sample folder and uses your selected model. Both samples use Node.js built-ins, with no dependency installation. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
 
+The simple sample in progress, with task status and the Implementation → Tests flow:
+
+![Maestrun running the simple sample, with the greeting task in progress and the blank-name validation task waiting.](docs/images/sample-running.png)
+
+[See the completed run and task details](docs/advanced.md#sample-screenshots).
+
 ## Go further
 
 - [Plan separately and edit Markdown tasks](docs/advanced.md#planning-and-task-format)

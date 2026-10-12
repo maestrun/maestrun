@@ -344,6 +344,18 @@ Each invocation creates a fresh `.maestrun/samples/run-*` directory and prints i
 
 To reconnect or resume, enter the printed directory and run `maestrun`. The main project's configuration, Git history and progress stay unchanged. `maestrun sample run` remains available for the original sequential QA demonstration.
 
+### Sample screenshots
+
+These captures show a real `maestrun sample` run using Codex. Timing, token usage, and model output vary between runs.
+
+Both tasks completed, including their Implementation and Tests stages:
+
+![The simple sample completed with two tasks and all four steps done.](images/sample-completed.png)
+
+Press **Enter** on a task to inspect its result and stage token usage:
+
+![Details of the completed greeting task, including its test result and token usage.](images/sample-details.png)
+
 ## Development and releases
 
 Clone this repository using its clone URL, or extract its source archive:
