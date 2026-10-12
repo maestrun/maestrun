@@ -1,4 +1,11 @@
 import { expect, test, vi } from "vitest";
+import { readFileSync } from "node:fs";
+
+test("the CLI version matches the package being released", async () => {
+  const { createApp } = await import("./app.js");
+  const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  expect(createApp().version()).toBe(version);
+});
 
 test("the application can be imported and constructed without running CLI commands", async () => {
   const log = vi.spyOn(console, "log").mockImplementation(() => {});

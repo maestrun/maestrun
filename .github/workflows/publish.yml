@@ -1,0 +1,52 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      NPM_TAG: ${{ github.event.release.prerelease && 'beta' || 'latest' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Validate release version and channel
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+          assert.equal(process.env.RELEASE_TAG, `v${version}`, 'Release tag must match package.json');
+          assert.equal(lock.version, version, 'Lockfile version must match package.json');
+          assert.equal(lock.packages[''].version, version, 'Lockfile root version must match package.json');
+          assert.equal(process.env.NPM_TAG, version.includes('-') ? 'beta' : 'latest', 'Prerelease flag must match the package version');
+          NODE
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:coverage
+      - name: Build and pack
+        run: npm pack
+      - name: Publish using npm trusted publishing
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          npm publish "./maestrun-maestrun-${version}.tgz" --access public --tag "$NPM_TAG"

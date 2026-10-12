@@ -1,4 +1,5 @@
 import { executorLabel, isRecord } from "../../contracts/workflow.js";
+import { VERSION } from "../../shared/version.js";
 import type { Draft } from "../../contracts/workflow.js";
 import { UserError } from "../../shared/errors.js";
 import {
@@ -64,7 +65,7 @@ async function codexPlan(input: Input): Promise<string> {
   const cleanup = monitorProcess(child, command, rpc.fail);
   const start = async (): Promise<void> => {
     await rpc.request("initialize", {
-      clientInfo: { name: "maestrun", version: "0.1.1-beta.0" },
+      clientInfo: { name: "maestrun", version: VERSION },
       capabilities: { experimentalApi: true },
     });
     child.stdin.write(`${JSON.stringify({ method: "initialized" })}\n`);

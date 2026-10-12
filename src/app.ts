@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { VERSION } from "./shared/version.js";
 import { createPlan } from "./modules/planning/index.js";
 import { initialize, initializeFromTemplate } from "./modules/workflow/index.js";
 import { runWorkflow, runSession, showRun } from "./modules/execution/index.js";
@@ -110,7 +111,7 @@ export function createApp(): Command {
     .description(
       "Guided workflows, planning and task execution with Codex, Claude Code, GitHub Copilot CLI, and Grok Build",
     )
-    .version("0.1.1-beta.0")
+    .version(VERSION)
     .showHelpAfterError();
   program.action(async () => {
     if (!(await runSession({ cwd: process.cwd(), resumeOnly: true }))) program.outputHelp();

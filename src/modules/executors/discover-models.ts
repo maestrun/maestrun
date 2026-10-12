@@ -1,4 +1,5 @@
 import { isRecord, validEffort, validModel } from "../../contracts/workflow.js";
+import { VERSION } from "../../shared/version.js";
 import type { Effort, ExecutorId, Model } from "../../contracts/workflow.js";
 import { UserError } from "../../shared/errors.js";
 import { killProcess, monitorProcess, startProcess } from "../../shared/process.js";
@@ -89,7 +90,7 @@ export async function discoverCodexModels(
   const cleanup = monitorProcess(child, command, rpc.fail);
   try {
     await rpc.request("initialize", {
-      clientInfo: { name: "maestrun", title: "Maestrun", version: "0.1.1-beta.0" },
+      clientInfo: { name: "maestrun", title: "Maestrun", version: VERSION },
     });
     rpc.notify("initialized");
     return await readCatalog(rpc);

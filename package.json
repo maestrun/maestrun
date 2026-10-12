@@ -1,6 +1,6 @@
 {
   "name": "@maestrun/maestrun",
-  "version": "0.1.1-beta.0",
+  "version": "0.1.1-beta.1",
   "license": "SUL-1.0",
   "publishConfig": {
     "access": "public",

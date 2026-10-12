@@ -1,4 +1,5 @@
 import type { StepInput } from "../../contracts/run.js";
+import { VERSION } from "../../shared/version.js";
 import { isRecord } from "../../contracts/workflow.js";
 import { UserError } from "../../shared/errors.js";
 import { CODEX_RESTRICTIONS } from "../executors/index.js";
@@ -65,7 +66,7 @@ function request(state: State, method: string, params: Record<string, unknown>):
 let sequence = 1;
 
 async function start(state: State, input: StepInput, prompt: string): Promise<void> {
-  await request(state, "initialize", { clientInfo: { name: "maestrun", version: "0.1.1-beta.0" } });
+  await request(state, "initialize", { clientInfo: { name: "maestrun", version: VERSION } });
   state.model.send({ method: "initialized" });
   const thread = await request(state, "thread/start", {
     model: input.stage.model,
