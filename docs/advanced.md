@@ -356,6 +356,22 @@ Press **Enter** on a task to inspect its result and stage token usage:
 
 ![Details of the completed greeting task, including its test result and token usage.](images/sample-details.png)
 
+### Advanced sample screenshots
+
+Run `maestrun sample advanced` to see parallel tasks, automatic QA repair, and integration. These captures use Codex; timing, token usage, and model output vary between runs.
+
+The add and clamp tasks start in parallel, while the composition task waits for both results:
+
+![The advanced sample running add and clamp in parallel, with the composition task waiting.](images/sample-advanced-running.png)
+
+QA detects the deliberately missing upper bound in `clamp`. The yellow return arrow shows **QA → Implementation**: QA is marked **Refactor · needs changes**, Implementation is **In progress**, and Tests waits to run again. The footer shows **Automatic repair (1/5)** and the reason for the rework.
+
+![The clamp task returning from QA to Implementation, with a yellow return arrow and the automatic repair notice.](images/sample-advanced-rework.png)
+
+After the correction, Tests and QA run again, followed by Review and Integration. The composition task then consumes both integrated results. This run completed all three tasks after one automatic repair:
+
+![The advanced sample completed with all three tasks done and the selected task's QA, Review, and Integration stages complete.](images/sample-advanced-completed.png)
+
 ## Development and releases
 
 Clone this repository using its clone URL, or extract its source archive:
