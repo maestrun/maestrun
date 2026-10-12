@@ -356,15 +356,15 @@ npm run build
 npm install --global .
 ```
 
-| Command                                            | Purpose                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| `npm run check`                                    | Formatting, lint, and TypeScript                                 |
-| `npm test`                                         | Unit and integration tests with fake executors                   |
-| `npm run test:coverage`                            | Coverage; minimum 80% for lines, statements, functions, branches |
-| `npm run release:pack`                             | Checks, tests, build, and compiled `.tgz` package                |
-| `npm publish ./maestrun-0.1.0.tgz --access public` | Publish a reviewed package using the owner's npm account         |
+| Command                                                     | Purpose                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| `npm run check`                                             | Formatting, lint, and TypeScript                                 |
+| `npm test`                                                  | Unit and integration tests with fake executors                   |
+| `npm run test:coverage`                                     | Coverage; minimum 80% for lines, statements, functions, branches |
+| `npm run release:pack`                                      | Checks, tests, build, and compiled `.tgz` package                |
+| `npm publish ./maestrun-maestrun-0.1.0.tgz --access public` | Publish a reviewed package using the owner's npm account         |
 
-Packaging does not publish. Users can install with `npm install --global maestrun@0.1.0` and update with `npm install --global maestrun@latest`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
+Packaging does not publish. Users can install with `npm install --global @maestrun/maestrun@0.1.0` and update with `npm install --global @maestrun/maestrun@latest`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
 
 Source is grouped into `config`, `contracts`, `shared`, and flat capabilities under `src/modules` (workflow, planning, execution, executors, plugins, onboarding). Each capability exports through `index.ts`; external consumers use the barrel. Shared layers do not depend on capabilities. Architecture tests enforce these boundaries. Builds clear `dist` and exclude tests.
 

@@ -11,10 +11,10 @@ You need **Node.js 24 LTS** (also supported: 22.13+ and 26+) and Linux, macOS, o
 Install the CLI from npm:
 
 ```sh
-npm install --global maestrun
+npm install --global @maestrun/maestrun
 ```
 
-No build step is needed. To update, run `npm install --global maestrun@latest`. [Building from source](docs/advanced.md#development-and-releases) is also supported.
+No build step is needed. To update, run `npm install --global @maestrun/maestrun@latest`. [Building from source](docs/advanced.md#development-and-releases) is also supported.
 
 Install and sign in to at least one executor:
 

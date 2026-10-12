@@ -1,7 +1,11 @@
 {
-  "name": "maestrun",
+  "name": "@maestrun/maestrun",
   "version": "0.1.0",
   "license": "SUL-1.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Guided workflows, planning and task execution with Codex, Claude Code, GitHub Copilot CLI, and Grok Build",
   "homepage": "https://github.com/maestrun/maestrun#readme",
   "repository": {
