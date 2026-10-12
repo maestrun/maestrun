@@ -110,7 +110,7 @@ export function createApp(): Command {
     .description(
       "Guided workflows, planning and task execution with Codex, Claude Code, GitHub Copilot CLI, and Grok Build",
     )
-    .version("0.1.0")
+    .version("0.1.1-beta.0")
     .showHelpAfterError();
   program.action(async () => {
     if (!(await runSession({ cwd: process.cwd(), resumeOnly: true }))) program.outputHelp();

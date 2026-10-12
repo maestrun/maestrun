@@ -1,12 +1,38 @@
 {
   "name": "@maestrun/maestrun",
-  "version": "0.1.0",
+  "version": "0.1.1-beta.0",
   "license": "SUL-1.0",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "description": "Guided workflows, planning and task execution with Codex, Claude Code, GitHub Copilot CLI, and Grok Build",
+  "keywords": [
+    "ai",
+    "ia",
+    "artificial-intelligence",
+    "agents",
+    "ai-agents",
+    "agentic-workflows",
+    "coding-agent",
+    "llm",
+    "chatgpt",
+    "openai",
+    "codex",
+    "claude",
+    "claude-code",
+    "anthropic",
+    "github-copilot",
+    "grok",
+    "grok-build",
+    "cli",
+    "developer-tools",
+    "automation",
+    "workflow",
+    "task-runner",
+    "task-looper",
+    "task-orchestration"
+  ],
   "homepage": "https://github.com/maestrun/maestrun#readme",
   "repository": {
     "type": "git",
@@ -21,6 +47,7 @@
   },
   "files": [
     "dist",
+    "assets",
     "README.md",
     "CONTRIBUTING.md",
     "docs",

@@ -65,7 +65,7 @@ function request(state: State, method: string, params: Record<string, unknown>):
 let sequence = 1;
 
 async function start(state: State, input: StepInput, prompt: string): Promise<void> {
-  await request(state, "initialize", { clientInfo: { name: "maestrun", version: "0.1.0" } });
+  await request(state, "initialize", { clientInfo: { name: "maestrun", version: "0.1.1-beta.0" } });
   state.model.send({ method: "initialized" });
   const thread = await request(state, "thread/start", {
     model: input.stage.model,

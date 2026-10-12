@@ -89,7 +89,7 @@ export async function discoverCodexModels(
   const cleanup = monitorProcess(child, command, rpc.fail);
   try {
     await rpc.request("initialize", {
-      clientInfo: { name: "maestrun", title: "Maestrun", version: "0.1.0" },
+      clientInfo: { name: "maestrun", title: "Maestrun", version: "0.1.1-beta.0" },
     });
     rpc.notify("initialized");
     return await readCatalog(rpc);

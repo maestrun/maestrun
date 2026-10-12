@@ -64,7 +64,7 @@ async function codexPlan(input: Input): Promise<string> {
   const cleanup = monitorProcess(child, command, rpc.fail);
   const start = async (): Promise<void> => {
     await rpc.request("initialize", {
-      clientInfo: { name: "maestrun", version: "0.1.0" },
+      clientInfo: { name: "maestrun", version: "0.1.1-beta.0" },
       capabilities: { experimentalApi: true },
     });
     child.stdin.write(`${JSON.stringify({ method: "initialized" })}\n`);
