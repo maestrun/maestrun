@@ -40,32 +40,35 @@ test("sample requires configured models before creating files", async ({ project
   });
 });
 
-test("sample run starts fresh on every invocation and preserves the main checkpoint", async ({
-  project,
-}) => {
-  await setupRun(project.cwd);
-  await executionProcesses(project, "sample");
-  const checkpoint = join(project.cwd, ".maestrun/run.json");
-  await writeFile(checkpoint, "existing project checkpoint");
-  for (let iteration = 0; iteration < 2; iteration += 1) {
-    const cli = sessionCli(project.cwd, ["sample", "run"], false);
-    expect(await cli.exited).toBe(0);
-    expect(cli.output()).toContain("Completed 3/3 tasks.");
-  }
-  expect(await readdir(join(project.cwd, ".maestrun/samples"))).toHaveLength(2);
-  expect(await readFile(checkpoint, "utf8")).toBe("existing project checkpoint");
-  const calls = (await readFile(project.log, "utf8"))
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as { input: string });
-  const stages = ["Implementation", "Tests", "QA", "Review"];
-  const expected = [...stages, ...stages.slice(0, 3), ...stages, ...stages];
-  expect(calls.map((call) => /^Run only the (.*?) stage/u.exec(call.input)?.[1])).toEqual([
-    ...expected,
-    ...expected,
-  ]);
-  expect(calls[7]?.input).toContain("Previous failure: Automatic repair (1/5) after qa");
-});
+// Two complete samples launch 30 executor processes; allow for slower CI runners.
+test(
+  "sample run starts fresh on every invocation and preserves the main checkpoint",
+  { timeout: 30000 },
+  async ({ project }) => {
+    await setupRun(project.cwd);
+    await executionProcesses(project, "sample");
+    const checkpoint = join(project.cwd, ".maestrun/run.json");
+    await writeFile(checkpoint, "existing project checkpoint");
+    for (let iteration = 0; iteration < 2; iteration += 1) {
+      const cli = sessionCli(project.cwd, ["sample", "run"], false);
+      expect(await cli.exited).toBe(0);
+      expect(cli.output()).toContain("Completed 3/3 tasks.");
+    }
+    expect(await readdir(join(project.cwd, ".maestrun/samples"))).toHaveLength(2);
+    expect(await readFile(checkpoint, "utf8")).toBe("existing project checkpoint");
+    const calls = (await readFile(project.log, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { input: string });
+    const stages = ["Implementation", "Tests", "QA", "Review"];
+    const expected = [...stages, ...stages.slice(0, 3), ...stages, ...stages];
+    expect(calls.map((call) => /^Run only the (.*?) stage/u.exec(call.input)?.[1])).toEqual([
+      ...expected,
+      ...expected,
+    ]);
+    expect(calls[7]?.input).toContain("Previous failure: Automatic repair (1/5) after qa");
+  },
+);
 
 test("sample run exposes the repair in the terminal and stays open for navigation", async ({
   project,
