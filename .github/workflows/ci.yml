@@ -1,0 +1,71 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review, converted_to_draft]
+
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  description:
+    name: PR changelog
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - run: node --test .github/scripts/validate-pr.test.mjs
+      - run: node .github/scripts/validate-pr.mjs
+
+  quality:
+    name: Code quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --check .github/pull_request_template.md .github/scripts/*.mjs .github/workflows/ci.yml
+      - run: npm run check
+      - run: npm run test:coverage
+      - name: Build and validate package
+        run: npm pack
+
+  validation:
+    name: validation
+    if: always()
+    needs: [description, quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Require both checks to pass
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DESCRIPTION_RESULT: ${{ needs.description.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          test "$QUALITY_RESULT" = success
+          if [ "$EVENT_NAME" = pull_request ]; then
+            test "$DESCRIPTION_RESULT" = success
+          fi
