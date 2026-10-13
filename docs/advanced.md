@@ -402,9 +402,9 @@ npm install --global .
 | `npm test`                                                                    | Unit and integration tests with fake executors                   |
 | `npm run test:coverage`                                                       | Coverage; minimum 80% for lines, statements, functions, branches |
 | `npm run release:pack`                                                        | Checks, tests, build, and compiled `.tgz` package                |
-| `npm publish ./maestrun-maestrun-0.1.1-beta.2.tgz --access public --tag beta` | Publish a reviewed Beta package using the owner's npm account    |
+| `npm publish ./maestrun-maestrun-0.1.1-beta.3.tgz --access public --tag beta` | Publish a reviewed Beta package using the owner's npm account    |
 
-Packaging locally does not publish. Users can install this release with `npm install --global @maestrun/maestrun@0.1.1-beta.2` and update to the newest Beta with `npm install --global @maestrun/maestrun@beta`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
+Packaging locally does not publish. Users can install this release with `npm install --global @maestrun/maestrun@0.1.1-beta.3` and update to the newest Beta with `npm install --global @maestrun/maestrun@beta`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
 
 ### Automatic npm publishing
 
@@ -414,9 +414,9 @@ One-time setup: configure an [npm trusted publisher](https://docs.npmjs.com/trus
 
 To publish the next Beta:
 
-1. Run `npm version prerelease --preid=beta --no-git-tag-version`. This updates `package.json` and `package-lock.json`; the CLI reads its version from the package.
-2. Commit and push the changes, including any documentation updates.
-3. Publish a GitHub release targeting that commit, with tag `v` followed by the package version, and check **Set as a pre-release**.
+1. Create a topic branch and run `npm version prerelease --preid=beta --no-git-tag-version`. This updates `package.json` and `package-lock.json`; the CLI reads its version from the package.
+2. Update versioned documentation examples, run the required validation, and submit the changes through a pull request. Merge it after the required checks and review.
+3. Publish a GitHub release targeting the merged commit, with tag `v` followed by the package version, and check **Set as a pre-release**.
 4. Check the **Publish to npm** run in GitHub Actions. After success, install with `npm install --global @maestrun/maestrun@beta`.
 
 For a stable release, use a stable package version and leave **Set as a pre-release** unchecked. The default install uses `latest`, so it will not receive Beta releases. npm versions are immutable: README or screenshot updates need a new package version too. If a workflow fails before publishing, fix the cause and rerun it; do not try to overwrite an already published version.
