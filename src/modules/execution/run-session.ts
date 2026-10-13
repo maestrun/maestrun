@@ -58,7 +58,8 @@ async function followSession(state: SessionView, finished: boolean): Promise<voi
     state.session = session;
     await refreshSessionView(state);
     if (state.error) throw state.error;
-    const keepOpen = finished || session.status === "completed";
+    const keepOpen =
+      finished || (session.status !== "cancelled" && Boolean(state.report?.finishedAt));
     if (
       session.status !== "running" &&
       !state.choosing &&

@@ -1,7 +1,11 @@
 import type { TaskState, TaskStep } from "../../contracts/run.js";
 
 export function taskDisplaySteps(task: TaskState | undefined): TaskStep[] {
-  const steps = task?.steps ?? [];
+  const steps = (task?.steps ?? []).map((step) =>
+    task?.status === "refactor" && step.status === "refactor"
+      ? { ...step, status: "failed" as const }
+      : step,
+  );
   if (!task || (!task.worktree && !task.integration && task.step !== "integration")) return steps;
   if (steps.some((step) => step.id === "integration")) return steps;
   return [
