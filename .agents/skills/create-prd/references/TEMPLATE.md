@@ -63,8 +63,8 @@ and baseline or mark the baseline unknown.]
 
 ## Assumptions and open decisions
 
-| Item | Evidence or assumption | Impact | Status or owner |
-|------|------------------------|--------|-----------------|
+| Item   | Evidence or assumption          | Impact                          | Status or owner                               |
+| ------ | ------------------------------- | ------------------------------- | --------------------------------------------- |
 | [item] | [source or explicit assumption] | [effect on scope or acceptance] | [resolved / non-blocking / awaiting decision] |
 
 [On updates, preserve requirement and acceptance IDs and identify dependent

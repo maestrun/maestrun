@@ -11,6 +11,7 @@ The context window is a shared resource. Your skill shares it with conversation 
 **Default assumption**: Agents are already very smart. Only add context the agent doesn't already have.
 
 **Good example: Concise** (~50 tokens):
+
 ````markdown
 ## Extract PDF text
 
@@ -25,6 +26,7 @@ with pdfplumber.open("file.pdf") as pdf:
 ````
 
 **Bad example: Too verbose** (~150 tokens):
+
 ```markdown
 ## Extract PDF text
 
@@ -40,16 +42,19 @@ First, you'll need to install it using pip. Then you can use the code below...
 Match the level of specificity to the task's fragility and variability.
 
 **High freedom** (text-based instructions):
+
 - Multiple approaches are valid
 - Decisions depend on context
 - Heuristics guide the approach
 
 **Medium freedom** (pseudocode or scripts with parameters):
+
 - A preferred pattern exists
 - Some variation is acceptable
 - Configuration affects behavior
 
 **Low freedom** (specific scripts, few or no parameters):
+
 - Operations are fragile and error-prone
 - Consistency is critical
 - A specific sequence must be followed
@@ -63,6 +68,7 @@ Skills act as additions to models, so effectiveness depends on the underlying mo
 Use consistent naming patterns. We recommend **gerund form** (verb + -ing) for skill names.
 
 **Good naming examples (gerund form)**:
+
 - `processing-pdfs`
 - `analyzing-spreadsheets`
 - `managing-databases`
@@ -70,10 +76,12 @@ Use consistent naming patterns. We recommend **gerund form** (verb + -ing) for s
 - `writing-documentation`
 
 **Acceptable alternatives**:
+
 - Noun phrases: `pdf-processing`, `spreadsheet-analysis`
 - Action-oriented: `process-pdfs`, `analyze-spreadsheets`
 
 **Avoid**:
+
 - Vague names: `helper`, `utils`, `tools`
 - Overly generic: `documents`, `data`, `files`
 - Inconsistent patterns within your skill collection
@@ -101,8 +109,9 @@ description: Analyze Excel spreadsheets, create pivot tables, generate charts. U
 ```
 
 **Avoid vague descriptions:**
+
 ```yaml
-description: Helps with documents  # Too vague
+description: Helps with documents # Too vague
 ```
 
 ## Progressive Disclosure Patterns
@@ -115,6 +124,7 @@ description: Helps with documents  # Too vague
 ## Quick start
 
 Extract text with pdfplumber:
+
 ```python
 import pdfplumber
 with pdfplumber.open("file.pdf") as pdf:
@@ -166,18 +176,23 @@ For simple edits, modify the XML directly.
 Keep references one level deep from SKILL.md. All reference files should link directly from SKILL.md to ensure agents read complete files when needed.
 
 **Bad example: Too deep**:
+
 ```markdown
 # SKILL.md
+
 See [advanced.md](advanced.md)...
 
 # advanced.md
+
 See [details.md](details.md)...
 
 # details.md
+
 Here's the actual information...
 ```
 
 **Good example: One level deep**:
+
 ```markdown
 # SKILL.md
 
@@ -249,12 +264,14 @@ This pattern greatly improves output quality.
 Don't include information that will become outdated:
 
 **Bad example: Time-sensitive**:
+
 ```markdown
 If you're doing this before August 2025, use the old API.
 After August 2025, use the new API.
 ```
 
 **Good example** (use "old patterns" section):
+
 ```markdown
 ## Current method
 
@@ -276,11 +293,13 @@ This endpoint is no longer supported.
 Choose one term and use it throughout the skill:
 
 **Good - Consistent**:
+
 - Always "API endpoint"
 - Always "field"
 - Always "extract"
 
 **Bad - Inconsistent**:
+
 - Mix "API endpoint", "URL", "API route", "path"
 - Mix "field", "box", "element", "control"
 - Mix "extract", "pull", "get", "retrieve"
@@ -293,7 +312,7 @@ Provide templates for output format. Match the level of strictness to your needs
 
 **For strict requirements**:
 
-````markdown
+`````markdown
 ## Report structure
 
 ALWAYS use this exact template structure:
@@ -302,9 +321,11 @@ ALWAYS use this exact template structure:
 # [Analysis Title]
 
 ## Executive summary
+
 [One-paragraph overview of key findings]
 
 ## Key findings
+
 - Finding 1 with supporting data
 - Finding 2 with supporting data
 ```
@@ -320,14 +341,17 @@ Here is a sensible default format, but use your best judgment:
 # [Analysis Title]
 
 ## Executive summary
+
 [Overview]
 
 ## Key findings
+
 [Adapt sections based on what you discover]
 ```
 
 Adjust sections as needed for the specific analysis type.
 ````
+`````
 
 ### Examples Pattern
 
@@ -341,6 +365,7 @@ Generate commit messages following these examples:
 **Example 1:**
 Input: Added user authentication with JWT tokens
 Output:
+
 ```
 feat(auth): implement JWT-based authentication
 
@@ -350,6 +375,7 @@ Add login endpoint and token validation middleware
 **Example 2:**
 Input: Fixed bug where dates displayed incorrectly in reports
 Output:
+
 ```
 fix(reports): correct date formatting in timezone conversion
 
@@ -376,6 +402,7 @@ Don't present multiple approaches unless necessary:
 
 **Good example: Provide a default**:
 "Use pdfplumber for text extraction:
+
 ```python
 import pdfplumber
 ```
@@ -390,6 +417,7 @@ For scanned PDFs requiring OCR, use pdf2image with pytesseract instead."
 **Create evaluations BEFORE writing extensive documentation.** This ensures your skill solves real problems rather than documenting imagined ones.
 
 **Evaluation-driven development:**
+
 1. **Identify gaps**: Run agent on representative tasks without a skill. Document specific failures or missing context
 2. **Create evaluations**: Build three scenarios that test these gaps
 3. **Establish baseline**: Measure agent's performance without the skill
@@ -421,6 +449,7 @@ Work with one instance of the agent ("Agent A") to create a skill that will be u
 Before sharing a skill, verify:
 
 ### Core Quality
+
 - [ ] Description is specific and includes key terms
 - [ ] Description includes both what the skill does and when to use it
 - [ ] SKILL.md body is under 200 lines (ideally <500 for optimal performance)
@@ -433,6 +462,7 @@ Before sharing a skill, verify:
 - [ ] Workflows have clear steps
 
 ### Code and Scripts
+
 - [ ] Scripts solve problems rather than punt to agent
 - [ ] Error handling is explicit and helpful
 - [ ] No "voodoo constants" (all values justified)
@@ -443,6 +473,7 @@ Before sharing a skill, verify:
 - [ ] Feedback loops included for quality-critical tasks
 
 ### Testing
+
 - [ ] At least three evaluations created
 - [ ] Tested with different models (if applicable)
 - [ ] Tested with real usage scenarios

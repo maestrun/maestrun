@@ -104,6 +104,7 @@ require their own authorization.
   as configured in `vitest.config.ts`. A focused test or `npm test` alone does
   not replace the coverage gate. Do not lower thresholds, exclude changed code,
   or skip failing tests to obtain a pass.
+
 - For documentation-only changes, check every changed Markdown file with the
   installed Prettier and verify links and command examples. Pass agent guidance
   paths explicitly because `npm run format:check` does not include `.agents/`.

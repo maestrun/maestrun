@@ -78,9 +78,9 @@ If JSON contracts exist between the backend and UI, they must be ready for displ
 
 #### Fixed source parameters (if applicable)
 
-| API              | Main parameters                    |
-| ---------------- | ---------------------------------- |
-| **[API name]**   | `[param1=value]`, `[param2=value]` |
+| API            | Main parameters                    |
+| -------------- | ---------------------------------- |
+| **[API name]** | `[param1=value]`, `[param2=value]` |
 
 [If applicable, document database schemas using the same pattern: subsection, table, and JSON or SQL example.]
 
@@ -90,9 +90,9 @@ If the feature exposes or consumes an API, document **every** endpoint using the
 
 #### Overview
 
-| Method           | Route          | Description       |
-| ---------------- | -------------- | ----------------- |
-| `[GET/POST/...]` | `[/api/...]`   | [Brief description] |
+| Method           | Route        | Description         |
+| ---------------- | ------------ | ------------------- |
+| `[GET/POST/...]` | `[/api/...]` | [Brief description] |
 
 ---
 
@@ -193,9 +193,9 @@ appropriate. Ensure every CA-* has a verification method.]
 
 ### Unit tests (if applicable)
 
-| ID | Test case name | Acceptance criteria | Expected result |
-|----|----------------|---------------------|-----------------|
-| TU-01 | [test case name] | [CA-01] | [expected result] |
+| ID    | Test case name   | Acceptance criteria | Expected result   |
+| ----- | ---------------- | ------------------- | ----------------- |
+| TU-01 | [test case name] | [CA-01]             | [expected result] |
 
 [Detail the unit-test strategy:
 
@@ -205,9 +205,9 @@ appropriate. Ensure every CA-* has a verification method.]
 
 ### Integration tests (if applicable)
 
-| ID | Test case name | Acceptance criteria | Expected result |
-|----|----------------|---------------------|-----------------|
-| TI-01 | [test case name] | [CA-01] | [expected result] |
+| ID    | Test case name   | Acceptance criteria | Expected result   |
+| ----- | ---------------- | ------------------- | ----------------- |
+| TI-01 | [test case name] | [CA-01]             | [expected result] |
 
 [If needed, detail:
 
@@ -216,9 +216,9 @@ appropriate. Ensure every CA-* has a verification method.]
 
 ### E2E tests (if applicable)
 
-| ID | Test case name | Acceptance criteria | Expected result |
-|----|----------------|---------------------|-----------------|
-| E2E-01 | [test case name] | [CA-01] | [expected result] |
+| ID     | Test case name   | Acceptance criteria | Expected result   |
+| ------ | ---------------- | ------------------- | ----------------- |
+| E2E-01 | [test case name] | [CA-01]             | [expected result] |
 
 [If needed, describe how to test the UI and its involved services using the browser tool available in the environment.]
 

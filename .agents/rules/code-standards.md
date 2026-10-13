@@ -59,8 +59,7 @@ Allowed when the constraint cannot be made clear in code:
 
 ```ts
 // Accepts the vendor prefixes "Server:", "Server=", and "Server-".
-const SERVER_FROM_SUBJECT =
-  /(?:^|\s)server\s*[:=-]\s*(?<name>[a-z0-9][a-z0-9.-]*)/iu;
+const SERVER_FROM_SUBJECT = /(?:^|\s)server\s*[:=-]\s*(?<name>[a-z0-9][a-z0-9.-]*)/iu;
 ```
 
 ### Limit files, classes, and functions

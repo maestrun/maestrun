@@ -55,6 +55,7 @@ skill-name/
 ### Concise is Key
 
 The context window is a shared resource. Your skill shares it with everything else the agent needs. Be concise and challenge each piece of information:
+
 - Does the agent really need this explanation?
 - Can I assume the agent knows this?
 - Does this paragraph justify its token cost?
@@ -72,6 +73,7 @@ Skills act as additions to models, so effectiveness depends on the underlying mo
 ## References
 
 For detailed guidance, see:
+
 - `references/progressive-disclosure.md` - 200-line rule and references pattern
 - `references/skill-structure.md` - SKILL.md format and frontmatter details
 - `references/examples.md` - Good skill examples

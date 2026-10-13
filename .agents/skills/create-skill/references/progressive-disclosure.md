@@ -19,6 +19,7 @@ Progressive disclosure isn't optional. Every skill over 200 lines should be refa
 ### Example
 
 Instead of a 1000-line SKILL.md:
+
 - SKILL.md: Core principles, architecture overview (150 lines)
 - references/components.md: Component patterns (150 lines)
 - references/routing.md: Routing patterns (100 lines)

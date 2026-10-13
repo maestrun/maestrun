@@ -23,11 +23,7 @@ Keep URL validation, response schemas, and safe error translation at the adapter
 import { createReadStream, createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 
-await pipeline(
-  createReadStream(inputPath),
-  transformStream,
-  createWriteStream(outputPath),
-);
+await pipeline(createReadStream(inputPath), transformStream, createWriteStream(outputPath));
 ```
 
 `pipeline` propagates completion and stream errors; do not manually queue unlimited chunks.

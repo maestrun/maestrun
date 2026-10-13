@@ -12,9 +12,10 @@ E2E-test repositories defined in [folder-structure.md](folder-structure.md).
   frontend. Coverage is a minimum signal, not a substitute for validating
   behavior.
 - Prioritize tests according to business risk. Critical workflows, such as
-  authentication, authorization, alert processing, and external integration
-  boundaries, require deeper coverage than low-impact CRUD behavior.
+authentication, authorization, alert processing, and external integration
+boundaries, require deeper coverage than low-impact CRUD behavior.
 </critical>
+
 ## FIRST principles
 
 Follow the relevant FIRST testing principles. The Timely principle is not

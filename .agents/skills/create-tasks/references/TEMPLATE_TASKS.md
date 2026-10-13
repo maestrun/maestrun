@@ -8,9 +8,9 @@
 
 ## Dependencies and traceability
 
-| Task | Depends on | Owning repository | Acceptance criteria | TechSpec tests |
-|------|------------|-------------------|---------------------|----------------|
-| 1.0 | [none or task IDs] | [repository/path] | [CA-*] | [TU-*, TI-*, E2E-* or manual case] |
+| Task | Depends on         | Owning repository | Acceptance criteria | TechSpec tests                     |
+| ---- | ------------------ | ----------------- | ------------------- | ---------------------------------- |
+| 1.0  | [none or task IDs] | [repository/path] | [CA-*]              | [TU-_, TI-_, E2E-* or manual case] |
 
 ## Completion policy
 
