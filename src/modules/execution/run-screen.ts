@@ -69,7 +69,8 @@ function footer(report: RunReport, state: ViewState, width: number): string[] {
 }
 
 function shortcuts(state: ViewState, finished: boolean): string {
-  if (state.details) return "  ↑/↓ scroll · I instructions · Enter/Esc back · Ctrl+C options";
+  if (state.details)
+    return `  ↑/↓ scroll · L ${state.logs ? "results" : "logs"} · I instructions · Enter/Esc back · Ctrl+C options`;
   if (state.flowStep) return "  PgUp/PgDn · Esc tasks · Home/End · F hide";
   return finished
     ? "  PgUp/PgDn steps · ↑/↓ tasks · Tab filter · F flow · Enter details · Esc close"

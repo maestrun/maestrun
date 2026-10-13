@@ -10,6 +10,7 @@ export type ViewState = {
   filter: number;
   selected: string;
   details: boolean;
+  logs?: boolean;
   scroll: number;
   notice?: string;
   flow?: boolean;
@@ -46,11 +47,8 @@ export function navigateView(state: ViewState, report: RunReport, key: Key): voi
     state.scroll = 0;
     return;
   }
-  if (key.name === "return") {
-    state.details = !state.details;
-    state.scroll = 0;
-    return;
-  }
+  if (key.name === "return" || (key.name === "l" && state.details))
+    return toggleDetails(state, key);
   if (["tab", "left", "right"].includes(key.name ?? "")) {
     delete state.flowStep;
     const direction = key.name === "left" || key.shift ? -1 : 1;
@@ -60,6 +58,15 @@ export function navigateView(state: ViewState, report: RunReport, key: Key): voi
     return;
   }
   moveSelection(state, report, key);
+}
+
+function toggleDetails(state: ViewState, key: Key): void {
+  if (key.name === "l") state.logs = !state.logs;
+  else {
+    state.details = !state.details;
+    state.logs = false;
+  }
+  state.scroll = 0;
 }
 
 function moveSelection(state: ViewState, report: RunReport, key: Key): void {

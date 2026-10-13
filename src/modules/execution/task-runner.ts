@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import {
   CancelError,
   UserError,
@@ -9,12 +8,11 @@ import {
 import { DEFAULT_MAX_REPAIRS } from "../../contracts/workflow.js";
 import { previousStageResults } from "./step-evidence.js";
 import { prepareRepair } from "./task-repair.js";
-import type { Stage } from "../../contracts/workflow.js";
 import type { RunContext } from "./execution.types.js";
 import type { TaskState } from "../../contracts/run.js";
 import type { Task } from "../../contracts/tasks.js";
 import { taskStages } from "./tasks.js";
-import { recordImplementationRerun } from "./task-reruns.js";
+import { startStep, setStepStatus } from "./task-step-state.js";
 import { validTokenUsage } from "../../shared/token-usage.js";
 function errorMessage(error: unknown): string {
   return error instanceof UserError
@@ -118,33 +116,4 @@ function failTask(state: TaskState, signal: AbortSignal, error: unknown): void {
   if (state.status !== "cancelled" && error instanceof RefactorError) state.status = "refactor";
   setStepStatus(state, state.status);
   state.error = state.status === "cancelled" ? "Cancelled." : errorMessage(error);
-}
-
-function startStep(state: TaskState, stage: Stage, context: RunContext): void {
-  recordImplementationRerun(state, stage);
-  const provider = context.providers?.[stage.id];
-  Object.assign(state, {
-    status: "running",
-    step: stage.id,
-    executor: provider ? `plugin:${provider}` : stage.executor,
-    model: provider ? "n/a" : stage.model,
-  });
-  delete state.summary;
-  if (stage.effort && !provider) state.effort = stage.effort;
-  else delete state.effort;
-  setStepStatus(state, "running");
-  if (!provider) state.conversationId = randomUUID();
-  else delete state.conversationId;
-}
-
-function setStepStatus(
-  state: TaskState,
-  status: "running" | "completed" | "failed" | "refactor" | "cancelled",
-): void {
-  const step = state.steps?.find((entry) => entry.id === state.step);
-  if (step) {
-    step.status = status;
-    if (status === "completed" && state.summary !== undefined) step.summary = state.summary;
-    else delete step.summary;
-  }
 }

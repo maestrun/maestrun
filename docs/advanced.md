@@ -229,13 +229,16 @@ Doctor checks Node/platform, executor compatibility/authentication, config/layou
 | ↑ / ↓                   | Select task or scroll details                                     |
 | Tab / Shift+Tab, ← / →  | Change status filter                                              |
 | Enter                   | Toggle task details                                               |
+| L (in task details)     | Toggle final results and full recorded logs for each step         |
 | F                       | Toggle flowchart                                                  |
 | PgUp / PgDn, Home / End | Browse steps or jump to first/last                                |
 | I                       | Send instructions to a running model task                         |
 | Esc                     | Leave details/input; close a finished run                         |
 | Ctrl+C                  | Choose background execution or cancellation; plain output cancels |
 
-Codex steers the active turn; Claude, Copilot, and Grok queue follow-ups in the same session. Delivery notices and conversations persist across reconnection. Extension steps have no model conversation.
+Select a task and press **Enter** to read each step's final result, status, and token usage in workflow order. Press **L** to show the full recorded model conversation for each step, and **L** again to return to results. Use **↑ / ↓** to scroll. Logs retain message line breaks and include instruction delivery notices. Each step shows its latest attempt; older runs without per-step conversation references can only show logs still linked to the task. Missing results and logs are explicitly labeled.
+
+Codex steers the active turn; Claude, Copilot, and Grok queue follow-ups in the same session. Delivery notices and conversations persist across reconnection. Sending instructions opens the log view. Extension steps have no model conversation.
 
 The flowchart labels completed, running, failed, and refactor states. Token counts are input/output for execution only: `n/a` means unavailable, and `*`/`partial` means incomplete data. Counts include repairs and resumes without estimating missing usage.
 

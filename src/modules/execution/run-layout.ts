@@ -14,7 +14,7 @@ export function taskTable(report: RunReport, state: ViewState, size: Size): stri
   return [
     chalk.dim(
       state.details
-        ? cell("  Task details", size.width)
+        ? cell(state.logs ? "  Task logs · L results" : "  Task details · L full logs", size.width)
         : row(HEADERS, size.width, state.layout?.columns),
     ),
     ...taskBody(report, state, { ...size, height: size.height - 1 }),
