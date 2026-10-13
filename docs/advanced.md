@@ -206,7 +206,7 @@ Worktrees isolate files, not network ports, databases, or plugin process memory.
 
 ### Recover from a failure
 
-Interactive failures offer **View evidence**, **Adjust configuration**, **Resume**, and **Exit and keep progress**. Resume validates the same task document and keeps the current invocation's plugin authorization. Noninteractive failures print next steps and exit.
+After task failures, the interactive task view stays open: the failed stage is red, its error is available in task details, and independent tasks continue while dependants remain blocked. When execution finishes, press **Esc** from the task list to open recovery options: **View evidence**, **Adjust configuration**, **Resume**, and **Exit and keep progress**. Resume validates the same task document and keeps the current invocation's plugin authorization. Noninteractive failures print next steps and exit.
 
 | Problem                        | Next step                                                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
