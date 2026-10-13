@@ -1,10 +1,18 @@
-# Advanced sample: automatic QA repair and integration
+# Advanced sample: independent failure, automatic QA repair and integration
 
 Run `maestrun sample advanced`. Git 2.38+ is required; the command initializes a repository only in the new sample directory.
-Three tiny tasks use Implementation → Tests → QA → Review. The first two run in separate worktrees; the third waits for both integrations. The repair budget is five cycles; this demo intentionally needs one QA repair. QA requests a correction and the workflow automatically returns to Implementation, repeats Tests and QA, then continues through Review and Integration. Each parallel task edits only its own files so both integrate without an intentional conflict. The third task runs after both integrations; no manual recovery is expected.
+Four tiny tasks use Implementation → Tests → QA → Review. One independent task deliberately fails because an externally supplied input is absent. No other task depends on it: add and clamp still integrate from their own worktrees, and compose waits only for those two results. The repair budget is five cycles. The missing-input task remains failed after exhausting that budget; clamp needs one QA repair. QA requests a correction and the workflow automatically returns to Implementation, repeats Tests and QA, then continues through Review and Integration. Each task edits only its own files so the successful tasks integrate without an intentional conflict. Expected outcome: three completed tasks and one failed task, with the terminal view still available for inspection. Noninteractive execution exits with code 1 after the other tasks finish.
 Use only Node.js ES modules and built-in node:test/node:assert/strict. No dependencies, installs, servers, network or full-repository scans. Inspect only task files. Keep each stage short and return brief, truthful evidence. QA/Review inspect only the explicit criteria; do not invent extra scope.
 
 ## Tasks
+
+### Task sample-missing-input: Demonstrate an independent failure
+
+- Depends on: none
+
+This isolated task demonstrates a real missing-input error without blocking unrelated work. The externally supplied file sample-required-input.json is intentionally absent from the fresh sample. Do not create, replace, or fabricate that input, including during automatic repairs. Do not modify any files or inspect other tasks' files.
+
+Implementation runs `node --input-type=module -e 'import { readFileSync } from "node:fs"; readFileSync("sample-required-input.json", "utf8");'`. Report the actual ENOENT failure with status failed and a short summary naming sample-required-input.json. Each retry checks the same prerequisite and reports the observed failure truthfully; previous feedback does not authorize inventing the missing input. The five repair cycles are expected to be exhausted. Do not return completed while the file is absent. Tests, QA, Review, and Integration remain unexecuted for this task. No other task may depend on this task or its input.
 
 ### Task sample-add: Add two numbers independently
 

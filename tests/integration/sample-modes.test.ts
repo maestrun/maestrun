@@ -16,6 +16,8 @@ import { sessionCli } from "../helpers/session-cli.js";
 import { runInput, savedReport } from "../helpers/worktrees.js";
 import { test } from "../helpers/project.js";
 
+const ADVANCED_STATUSES = ["failed", "completed", "completed", "completed"];
+
 test("simple command runs only implementation and tests for two dependent tasks", async ({
   project,
 }) => {
@@ -39,7 +41,7 @@ test("simple command runs only implementation and tests for two dependent tasks"
   expect(calls).toHaveLength(4);
 });
 
-test("advanced command automatically repairs QA feedback and completes all tasks", async ({
+test("advanced command reports an independent failure after completing the remaining tasks", async ({
   project,
 }) => {
   await setupRun(project.cwd);
@@ -48,16 +50,18 @@ test("advanced command automatically repairs QA feedback and completes all tasks
   vi.stubEnv("PATH", `${project.bin}:${originalPath}`);
   const cli = sessionCli(project.cwd, ["sample", "advanced"], false);
   const exit = await cli.exited;
-  expect(exit, cli.output()).toBe(0);
-  expect(cli.output()).toContain("Completed 3/3 tasks.");
+  expect(exit, cli.output()).toBe(1);
+  expect(cli.output()).toContain("Failed sample-missing-input");
+  expect(cli.output()).toContain("sample-required-input.json");
   const directory = /Sample project: ([^\r\n]+)/u.exec(cli.output())?.[1];
   if (!directory) throw new Error("Missing sample directory");
   const { config } = await loadConfig(directory);
   expect(config?.execution).toMatchObject({ mode: "parallel", concurrency: 2, maxRepairs: 5 });
   expect(await gitOutput(directory, ["rev-parse", "--show-toplevel"])).toBe(directory);
   const report = await savedReport(directory);
-  expect(report.tasks[1]?.reruns).toHaveLength(1);
-  expect(report.tasks.map((task) => task.status)).toEqual(["completed", "completed", "completed"]);
+  expect(report.tasks[0]?.reruns).toHaveLength(5);
+  expect(report.tasks[2]?.reruns).toHaveLength(1);
+  expect(report.tasks.map((task) => task.status)).toEqual(ADVANCED_STATUSES);
   await expect(stat(join(project.cwd, ".git"))).rejects.toThrow();
 });
 
@@ -67,10 +71,12 @@ test("advanced dependencies consume integrated files after the repair", async ({
   const cwd = await prepareSample(project.cwd, undefined, "advanced");
   const paths = new Set<string>();
   const clampStages: string[] = [];
-  await runWorkflow({ ...runInput(cwd), tasksPath: "plan.md" }, async (input) => {
-    paths.add(input.cwd);
-    return simulateAdvancedStep(input, clampStages);
-  });
+  await expect(
+    runWorkflow({ ...runInput(cwd), tasksPath: "plan.md" }, async (input) => {
+      paths.add(input.cwd);
+      return simulateAdvancedStep(input, clampStages);
+    }),
+  ).rejects.toThrow("sample-missing-input");
   expect(clampStages).toEqual([
     "implementation",
     "testing",
@@ -80,12 +86,23 @@ test("advanced dependencies consume integrated files after the repair", async ({
     "qa",
     "review",
   ]);
-  expect(paths.size).toBe(3);
-  expect((await savedReport(cwd)).tasks.every((task) => task.status === "completed")).toBe(true);
+  expect(paths.size).toBe(4);
+  expect((await savedReport(cwd)).tasks.map((task) => task.status)).toEqual(ADVANCED_STATUSES);
   expect(await readFile(join(project.cwd, ".maestrun/config.json"), "utf8")).toBe(before);
 });
 
 async function simulateAdvancedStep(input: StepInput, clampStages: string[]): Promise<string> {
+  if (input.task.id === "sample-missing-input") {
+    await expect(readFile(join(input.cwd, "sample-required-input.json"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    return stepResult(
+      JSON.stringify({
+        status: "failed",
+        summary: "ENOENT: sample-required-input.json is missing",
+      }),
+    );
+  }
   if (input.task.id === "sample-compose") {
     expect(await readFile(join(input.cwd, "sample-add.txt"), "utf8")).toBe("ready");
     expect(await readFile(join(input.cwd, "sample-clamp.txt"), "utf8")).toBe("repaired");

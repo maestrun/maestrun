@@ -334,14 +334,23 @@ maestrun sample advanced            # Advanced
 maestrun sample advanced --background
 ```
 
-| Sample                                   | Tasks                            | Scenarios                                                              |
-| ---------------------------------------- | -------------------------------- | ---------------------------------------------------------------------- |
-| [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation | Sequential implementation/tests, dependency and regression cases       |
-| [Advanced](../examples/advanced/plan.md) | Add + clamp → compose results    | Parallel worktrees, automatic QA repair and dependent task integration |
+| Sample                                   | Tasks                                | Scenarios                                                                                   |
+| ---------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation     | Sequential implementation/tests, dependency and regression cases                            |
+| [Advanced](../examples/advanced/plan.md) | Missing input; add + clamp → compose | Independent failure, parallel worktrees, automatic QA repair and dependent task integration |
 
-Tasks touch one function and its tests, using only Node.js built-ins. No installs or servers. Simple needs four model stages; advanced normally needs fifteen, including one intentional QA repair. QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both independent tasks and runs the dependent task. Actual duration depends on the executor/model.
+Tasks use only Node.js built-ins. No installs or servers. Simple needs four model stages; advanced normally needs twenty-one: fifteen for add, clamp, and compose (including one intentional QA repair), plus six attempts at the missing-input task (the initial attempt and five repairs). QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
 
-The advanced sample is expected to complete all three tasks in one run without manual recovery.
+The advanced sample starts `sample-missing-input` alongside `sample-add`. The missing-input task checks an intentionally absent `sample-required-input.json`, reports the actual ENOENT error, and exhausts its repair budget. It has no dependants. The remaining tasks continue through Tests, QA, Review, and Integration; compose depends only on add and clamp. Expected final task statuses:
+
+```text
+sample-missing-input  failed     Implementation: sample-required-input.json is missing
+sample-add            completed  Integrated
+sample-clamp          completed  Repaired after QA feedback, then integrated
+sample-compose        completed  Consumed both integrated results
+```
+
+The run intentionally ends with **3 completed tasks and 1 failed task**. In a terminal, the failed task stays visible and the view remains open to inspect the rest of the workflow: select a task and press **Enter** for step results or **L** for recorded logs. Noninteractive execution exits with **code 1 after all runnable tasks finish**. Repeating the run retries the missing-input task; it will fail again while its input remains absent. No manual recovery is needed for the other three tasks to finish.
 
 Each invocation creates a fresh `.maestrun/samples/run-*` directory and prints its path. Advanced requires Git 2.38+ and automatically creates a separate repository there. In a terminal, choose executor/model/effort; otherwise saved assignments are required. Both use a five-cycle repair limit and exclude plugins, custom steps and target overrides.
 
@@ -361,7 +370,7 @@ Press **Enter** on a task to inspect its result and stage token usage:
 
 ### Advanced sample screenshots
 
-Run `maestrun sample advanced` to see parallel tasks, automatic QA repair, and integration. These captures use Codex; timing, token usage, and model output vary between runs.
+Run `maestrun sample advanced` to see an independent failure while the remaining tasks continue through automatic QA repair and integration. The captures below show the successful path from the earlier three-task sample, before the independent missing-input task was added. They use Codex; timing, token usage, and model output vary between runs. The current four-task sample ends with the missing-input task failed and the same three successful tasks completed, as shown in the status example above.
 
 The add and clamp tasks start in parallel, while the composition task waits for both results:
 

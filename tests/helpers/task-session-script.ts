@@ -2,7 +2,9 @@ export const TASK_SESSION_SCRIPT = `
 let executing = false;
 let extraInstructions = '';
 let taskPrompt = '';
-const resultText = () => mode === 'sample' && taskPrompt.startsWith('Run only the QA stage for task sample-clamp:') && !taskPrompt.includes('\\nPrevious failure:')
+const resultText = () => mode === 'sample' && taskPrompt.startsWith('Run only the Implementation stage for task sample-missing-input:')
+? JSON.stringify({ status: 'failed', summary: 'ENOENT: sample-required-input.json is missing' })
+: mode === 'sample' && taskPrompt.startsWith('Run only the QA stage for task sample-clamp:') && !taskPrompt.includes('\\nPrevious failure:')
 ? JSON.stringify({ status: 'refactor', summary: 'clamp.mjs omits the required upper bound' })
 : mode === 'malformed' ? 'not json' : JSON.stringify({
   status: mode === 'failed' ? 'failed' : mode === 'refactor' ? 'refactor' : 'completed',
