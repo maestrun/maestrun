@@ -72,11 +72,13 @@ export async function runSample(
   console.log(
     input.mode === "simple"
       ? "Simple: 2 small sequential tasks — greeting, then blank-name validation. Implementation → Tests."
-      : "Advanced: 3 small tasks — add, clamp with QA repair, then compose their results.",
+      : input.mode === "advanced"
+        ? "Advanced: 4 small tasks — an independent failure, add, clamp with QA repair, then compose."
+        : "QA repair: 3 small tasks — add, clamp with QA repair, then compose their results.",
   );
   if (input.mode === "advanced")
     console.log(
-      "Expected: QA requests one repair, automatically returning to Implementation before all three tasks complete.",
+      "Expected: missing input exhausts five repairs and fails; the other three tasks finish, including QA repair and integration. The final run status is failed (exit 1).",
     );
   try {
     await runSession({ cwd: directory, background: input.background ?? false });

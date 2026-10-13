@@ -133,10 +133,12 @@ Keep **`.maestrun/run.json`**: it stores completion checkpoints. Parallel runs a
 
 ```sh
 maestrun sample          # 2 sequential tasks: implementation and tests
-maestrun sample advanced # 3 tasks: parallel execution, QA repair, and integration
+maestrun sample advanced # 4 tasks: independent failure, QA repair, and integration
 ```
 
 Each run creates a separate sample folder and uses your selected model. Both samples use Node.js built-ins, with no dependency installation. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
+
+Advanced intentionally leaves one independent task failed while the other three complete. Its final run status is failed; noninteractive execution exits with code 1 after the remaining workflow finishes.
 
 The simple sample in progress, with task status and the Implementation → Tests flow:
 
