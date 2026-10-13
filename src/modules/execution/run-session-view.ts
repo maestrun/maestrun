@@ -1,9 +1,10 @@
-import type { RunReport } from "../../contracts/run.js";
+import type { RunReport, TaskState } from "../../contracts/run.js";
 import { createRunView } from "./run-view.js";
 import { stateLine } from "./run-report.repository.js";
 import { sessionReport } from "./run-session.repository.js";
 import { readConversation } from "./task-conversation.repository.js";
 import { taskInstructions } from "./task-instructions.js";
+import { selectedIndex, visibleTasks } from "./run-view-state.js";
 
 import type { SessionView } from "./execution.types.js";
 
@@ -43,11 +44,29 @@ export async function refreshSessionView(state: SessionView): Promise<void> {
       if (conversation) task.conversation = conversation;
     }),
   );
+  if (state.selection?.details && state.selection.logs) {
+    const tasks = visibleTasks(report, state.selection.filter);
+    const task = tasks[selectedIndex(tasks, state.selection)];
+    if (task) await loadStepConversations(state.cwd, task);
+  }
   if (state.report) Object.assign(state.report, report);
   else state.report = report;
   openSessionView(state);
   if (state.view) state.view.update();
   else if (!state.choosing) logUpdates(state, report);
+}
+
+async function loadStepConversations(cwd: string, task: TaskState): Promise<void> {
+  await Promise.all(
+    (task.steps ?? []).map(async (step) => {
+      if (!step.conversationId) return;
+      const conversation =
+        step.conversationId === task.conversationId
+          ? task.conversation
+          : await readConversation(cwd, step.conversationId);
+      if (conversation) step.conversation = conversation;
+    }),
+  );
 }
 
 function logUpdates(state: SessionView, report: RunReport): void {

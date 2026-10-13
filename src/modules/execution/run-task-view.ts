@@ -7,6 +7,7 @@ import { selectedIndex, visibleTasks } from "./run-view-state.js";
 import type { ViewState } from "./run-view-state.js";
 import { cell, wrapText } from "../../shared/terminal-text.js";
 import { tokenUsageLabel, tokenUsageColumn } from "../../shared/token-usage.js";
+import { taskStepOutput } from "./task-step-output.js";
 
 const STATUS = {
   pending: "○ Waiting",
@@ -91,7 +92,7 @@ function taskLines(
   ];
 }
 
-function details(task: TaskState | undefined, width: number): string[] {
+function details(task: TaskState | undefined, width: number, logs: boolean): string[] {
   if (!task) return ["No task selected."];
   return [
     `${task.id} — ${task.title}`,
@@ -100,25 +101,19 @@ function details(task: TaskState | undefined, width: number): string[] {
     `Executor: ${task.executor ?? "—"}`,
     `Model: ${task.model ?? "—"} · Effort: ${task.effort ?? "default"}`,
     "",
-    task.error
-      ? `Error: ${task.error}`
-      : (task.summary ?? "Waiting for the current stage to report a result."),
+    ...(task.error ? [`Error: ${task.error}`] : []),
     ...(task.reruns?.flatMap((rerun, index) => [
       "",
       `Rerun ${index + 1}: ${isStage(rerun.fromStep) ? stageLabel(rerun.fromStep) : rerun.fromStep} → Implementation`,
       `Started: ${rerun.startedAt}`,
       `Justification: ${rerun.justification}`,
     ]) ?? []),
-    ...(task.conversation?.messages.flatMap((message) => [
-      "",
-      `${message.role === "user" ? "You" : "Model"}${message.status ? ` · ${message.status}` : ""}`,
-      message.text,
-      ...(message.error ? [message.error] : []),
-    ]) ?? []),
+    ...taskStepOutput(task, logs),
     "",
-    ...(task.steps?.map((step) => `${step.title}: ${tokenUsageLabel(step)}`) ?? []),
     tokenUsageLabel(task),
-  ].flatMap((line) => (line ? wrapText(line, width) : [""]));
+  ].flatMap((text) =>
+    text.split(/\r?\n/u).flatMap((line) => (line ? wrapText(line, width) : [""])),
+  );
 }
 
 export function taskBody(
@@ -128,9 +123,17 @@ export function taskBody(
 ): string[] {
   if (!state.details) return taskList(report, state, size);
   const tasks = visibleTasks(report, state.filter);
-  const lines = details(tasks[selectedIndex(tasks, state)], size.width);
+  const task = tasks[selectedIndex(tasks, state)];
+  const lines = details(task, size.width, Boolean(state.logs));
   const end = Math.max(0, lines.length - size.height);
   state.scroll = state.follow ? end : Math.min(state.scroll, end);
+  if (state.follow && state.logs && task?.steps) {
+    const current = task.steps.findIndex((step) => step.id === task.step);
+    if (current >= 0) {
+      const prefix = { ...task, steps: task.steps.slice(0, current + 1) };
+      state.scroll = Math.max(0, details(prefix, size.width, true).length - size.height);
+    }
+  }
   return lines.slice(state.scroll, state.scroll + size.height);
 }
 

@@ -16,6 +16,7 @@ test("sends instructions from the execution view and keeps the conversation afte
   try {
     await cli.wait("Effort: high");
     cli.send("\r");
+    cli.send("l");
     await cli.wait("Working on the task.");
     cli.send("i");
     await cli.wait("Instructions for a");
@@ -38,6 +39,8 @@ async function reconnect(cwd: string): Promise<void> {
   try {
     await cli.wait("Effort: high");
     cli.send("\r");
+    cli.send("l");
+    cli.send("\x1b[B".repeat(8));
     await cli.wait("Also check empty inputs");
     await cli.wait("You · sent");
   } finally {

@@ -64,5 +64,6 @@ async function delivery(cwd: string, conversationId: string, id: string): Promis
 function showConversation(state: SessionView): void {
   if (!state.selection) return;
   state.selection.details = true;
+  state.selection.logs = true;
   state.selection.follow = true;
 }

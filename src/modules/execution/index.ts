@@ -3,6 +3,8 @@ export * from "./run-report.repository.js";
 export * from "./run-workflow.js";
 export * from "./scheduler.js";
 export * from "./task-runner.js";
+export * from "./task-step-output.js";
+export * from "./task-step-state.js";
 export * from "./task-reruns.js";
 export * from "./step-executor.client.js";
 export * from "./tasks.js";

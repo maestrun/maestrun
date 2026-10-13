@@ -19,6 +19,8 @@ export type TaskRerun = {
 };
 export type TaskStep = {
   summary?: string;
+  conversationId?: string;
+  conversation?: TaskConversation;
   id: string;
   title: string;
   model?: string;
