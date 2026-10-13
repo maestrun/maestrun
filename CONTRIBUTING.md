@@ -2,6 +2,8 @@
 
 Contributions are welcome: bug fixes, features, tests, documentation, and reproducible bug reports. Keep each pull request focused on one problem so it is easy to review.
 
+Every repository change must go through a pull request, including code, tests, documentation, configuration, dependencies, and agent guidance. This applies to maintainers and contributors alike. Before editing any files, create or switch to a topic branch for the task. Make all edits and commits on that branch, never on the default branch or in detached HEAD. If changes already exist on the default branch, preserve them by creating a topic branch before continuing. Do not push changes directly to the default branch or bypass the PR workflow.
+
 ## Before you start
 
 Read the [README](README.md) and the relevant sections of the [advanced guide](docs/advanced.md). Check existing issues and pull requests for related work. For a substantial feature or breaking change, open an issue first to discuss the expected behavior and scope.
@@ -99,6 +101,8 @@ For changes to terminal output or interactive prompts, manually exercise the aff
 ## Submit your pull request
 
 Push your branch to your fork and open a pull request against the upstream repository's default branch. Use a clear title that describes the change, and write the description in English.
+
+Use the [pull request template](.github/pull_request_template.md). Record actual validation results and explain any checks that are not applicable or could not run.
 
 Include:
 

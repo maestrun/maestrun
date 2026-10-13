@@ -1,0 +1,4 @@
+interface:
+  display_name: "Developing Node Backends"
+  short_description: "Build and review robust Node.js backends"
+  default_prompt: "Use $developing-node-backends to implement or review this Node.js backend change."
