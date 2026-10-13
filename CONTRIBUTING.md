@@ -100,6 +100,19 @@ For changes to terminal output or interactive prompts, manually exercise the aff
 
 Push your branch to your fork and open a pull request against the upstream repository's default branch. Use a clear title that describes the change, and write the description in English.
 
+Use the [PR template](.github/pull_request_template.md) so maintainers can build a version changelog directly from merged PRs:
+
+- Write an outcome-focused title of 10–100 characters, for example `Preserve task progress when resuming an interrupted workflow`. Generic titles such as `Update files` are rejected. No type prefix is required.
+- Fill every template section. In `Changelog`, write one standalone bullet per change, starting with `Added:`, `Changed:`, `Fixed:`, or `Removed:`. For changes with no user-facing effect, use `Internal:` and explain the maintenance benefit. Keep each bullet on one source line.
+- In `Breaking changes and migration`, describe incompatibilities and the steps needed to upgrade, or write `None`. Use `None` for `Limitations` when there are none.
+- In the validation table, record the command, `PASS`, `FAIL`, `BLOCKED`, or `NOT APPLICABLE`, and actual evidence or a reason. Keep incomplete work in draft. Complete the readiness checklist before marking the PR ready.
+
+The `PR validation` workflow validates the title and description whenever a PR is opened, edited, updated, reopened, or its draft status changes. `PR changelog` checks the structure; reviewers still verify that the wording accurately describes the changes. `Code quality` runs formatting, linting, types, coverage (80% minimum), and package build checks. Both jobs use GitHub-hosted `ubuntu-latest`; no self-hosted runner or additional secrets are required.
+
+For pull requests, the final `validation` check succeeds only when both jobs pass; failed or cancelled dependencies cannot satisfy it. Pushes to `main` and manual runs validate code quality without requiring a PR description. It matches the check already required by this repository's default-branch ruleset. In forks, maintainers must require `validation` in branch protection to block merges on failures; adding a workflow alone does not make its checks mandatory. This workflow does not configure repository settings or publish a release.
+
+To test the description validator locally, run `node --test .github/scripts/validate-pr.test.mjs`. To validate a real event payload, run `GITHUB_EVENT_PATH=/path/to/event.json node .github/scripts/validate-pr.mjs`; the JSON must contain a `pull_request` object with `title`, `body`, and `draft`.
+
 Include:
 
 - The problem being solved and a related issue link, if one exists.
