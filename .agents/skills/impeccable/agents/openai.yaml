@@ -1,0 +1,7 @@
+interface:
+  display_name: Impeccable
+  short_description: Use when the user wants to design, redesign, shape, critique, audit, polish, clarify,...
+  default_prompt: Use Impeccable to design new frontend features or redesign, critique, audit, or polish an existing interface.
+
+policy:
+  allow_implicit_invocation: true

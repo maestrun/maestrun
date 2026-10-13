@@ -4,7 +4,10 @@ coverage/
 *.tgz
 .env
 .env.*
-/.agents/
+/.agents/*
+!/.agents/skills/
+!/.agents/rules/
+/.agents/skills/**/.impeccable/
 /.maestrun/
 /SECURITY_COVERAGE.json
 /SECURITY_FINDINGS.json
