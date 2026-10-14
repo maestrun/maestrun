@@ -335,7 +335,7 @@ In Claude, invoke `/maestrun:maestrun`; in Codex, invoke the installed Maestrun 
 | `~/.maestrun/config.json`, `layout.json`, `templates/` | Global defaults and reusable workflows                      |
 | `~/.maestrun/conversations/<project-id>/`              | Conversations grouped by absolute project path              |
 
-Maestrun creates `.maestrun/.gitignore` when absent. It allows only configuration, layout, step instructions, and the ignore file; other state is ignored by default. Existing ignore rules are preserved. Already-tracked files stay tracked, and secrets must not be placed in allowed files. Older project-local conversations remain readable.
+Maestrun creates `.maestrun/.gitignore` when absent. It allows only configuration, layout, step instructions, and the ignore file; other state is ignored by default. Existing rules are preserved, with exclusions appended for samples, logs, and rotated logs inside `.maestrun`. Maestrun also adds `/plan.md` to the project's root `.gitignore`, leaving plans in other folders unaffected. Advanced samples keep their plan local instead of committing it to the sample repository. Already-tracked files stay tracked: use `git rm --cached -- <file>` (or `git rm -r --cached -- <directory>`) to remove generated files from the index while keeping local copies. This does not remove them from previous commits. Secrets must not be placed in allowed files. Older project-local conversations remain readable.
 
 ## Sample
 
@@ -414,9 +414,9 @@ npm install --global .
 | `npm test`                                                                    | Unit and integration tests with fake executors                   |
 | `npm run test:coverage`                                                       | Coverage; minimum 80% for lines, statements, functions, branches |
 | `npm run release:pack`                                                        | Checks, tests, build, and compiled `.tgz` package                |
-| `npm publish ./maestrun-maestrun-0.1.1-beta.4.tgz --access public --tag beta` | Publish a reviewed Beta package using the owner's npm account    |
+| `npm publish ./maestrun-maestrun-0.1.1-beta.5.tgz --access public --tag beta` | Publish a reviewed Beta package using the owner's npm account    |
 
-Packaging locally does not publish. Users can install this release with `npm install --global @maestrun/maestrun@0.1.1-beta.4` and update to the newest Beta with `npm install --global @maestrun/maestrun@beta`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
+Packaging locally does not publish. Users can install this release with `npm install --global @maestrun/maestrun@0.1.1-beta.5` and update to the newest Beta with `npm install --global @maestrun/maestrun@beta`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
 
 ### Automatic npm publishing
 
