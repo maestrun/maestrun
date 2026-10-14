@@ -5,6 +5,10 @@ import { isCancellation, UserError } from "../../shared/errors.js";
 import { withBack } from "../../shared/navigation.js";
 import { readConversation, sendTaskMessage } from "./task-conversation.repository.js";
 import type { SessionView } from "./execution.types.js";
+import { pendingInput } from "./task-input.js";
+import { answerTaskInput } from "./task-input.repository.js";
+import { cleanText } from "../../shared/terminal-text.js";
+import { FILTERS } from "./run-view-state.js";
 
 export function taskInstructions(state: SessionView, task: TaskState): void {
   if (state.choosing) return;
@@ -26,6 +30,7 @@ export function taskInstructions(state: SessionView, task: TaskState): void {
 }
 
 async function compose(state: SessionView, task: TaskState): Promise<void> {
+  if (task.status === "on_hold") return answerHeldTask(state, task);
   if (task.status !== "running" || !task.conversationId)
     throw new UserError(
       "Select a running model task to add instructions.",
@@ -46,6 +51,36 @@ async function compose(state: SessionView, task: TaskState): Promise<void> {
   const id = await sendTaskMessage(state.cwd, task.conversationId, text);
   state.notice = await delivery(state.cwd, task.conversationId, id);
   showConversation(state);
+}
+
+async function answerHeldTask(state: SessionView, task: TaskState): Promise<void> {
+  const request = pendingInput(task);
+  if (!request) return;
+  state.ui.log(`${task.id} · ${task.title} · On hold`);
+  for (const line of `${request.summary}\n\n${request.question}`.split(/\r?\n/u))
+    state.ui.log(cleanText(line));
+  const text = await withBack(
+    (signal) =>
+      input(
+        {
+          message: "Your answer (Esc keeps the task on hold)",
+          validate: (value) =>
+            (Boolean(value.trim()) && value.length <= 32000) || "Enter 1–32000 characters.",
+        },
+        { signal },
+      ),
+    state.prompt?.signal ?? new AbortController().signal,
+  );
+  await answerTaskInput(state.cwd, task, text);
+  state.notice = "Answer saved. The task resumes when an execution slot is available.";
+  if (!state.selection) return;
+  delete state.selection.flowStep;
+  state.selection.filter = FILTERS.indexOf("Input");
+  state.selection.details = false;
+  state.selection.scroll = 0;
+  state.selection.selected =
+    state.report?.tasks.find((entry) => entry.status === "on_hold" && entry.id !== task.id)?.id ??
+    task.id;
 }
 
 async function delivery(cwd: string, conversationId: string, id: string): Promise<string> {

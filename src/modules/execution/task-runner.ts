@@ -3,6 +3,8 @@ import {
   UserError,
   RefactorError,
   StepFailedError,
+  StepInputRequired,
+  AuthenticationRequiredError,
   isCancellation,
 } from "../../shared/errors.js";
 import { DEFAULT_MAX_REPAIRS } from "../../contracts/workflow.js";
@@ -14,6 +16,7 @@ import type { Task } from "../../contracts/tasks.js";
 import { taskStages } from "./tasks.js";
 import { startStep, setStepStatus } from "./task-step-state.js";
 import { validTokenUsage } from "../../shared/token-usage.js";
+import { holdTask } from "./task-input.js";
 function errorMessage(error: unknown): string {
   return error instanceof UserError
     ? `${error.message} Next: ${error.nextAction}`
@@ -37,7 +40,7 @@ export async function runTask(context: RunContext, task: Task): Promise<void> {
 }
 async function runWithRepairs(context: RunContext, task: Task, state: TaskState): Promise<void> {
   const limit = context.config.execution?.maxRepairs ?? DEFAULT_MAX_REPAIRS;
-  for (let attempt = 0; ; attempt++) {
+  for (let attempt = state.repairAttempts ?? 0; ; attempt++) {
     try {
       await runStages(context, task, state);
       return;
@@ -49,6 +52,7 @@ async function runWithRepairs(context: RunContext, task: Task, state: TaskState)
         attempt: attempt + 1,
         limit,
       });
+      state.repairAttempts = attempt + 1;
     }
   }
 }
@@ -70,6 +74,7 @@ async function runStages(context: RunContext, task: Task, state: TaskState): Pro
       timeoutMs: context.config.timeoutMs ?? 600000,
       ...(state.conversationId ? { conversationId: state.conversationId } : {}),
       ...(state.error ? { feedback: state.error } : {}),
+      ...(state.inputRequests ? { inputRequests: state.inputRequests } : {}),
     });
     checkCancellation(context.signal);
     state.completedSteps += 1;
@@ -99,8 +104,7 @@ async function executeStage(
       },
     });
   } catch (error) {
-    if (!(error instanceof StepFailedError || error instanceof RefactorError))
-      for (const record of records) record.tokenUsageIncomplete = true;
+    if (!isModelResult(error)) for (const record of records) record.tokenUsageIncomplete = true;
     throw error;
   } finally {
     if (!reported) for (const record of records) record.tokenUsageIncomplete = true;
@@ -112,8 +116,25 @@ function checkCancellation(signal: AbortSignal): void {
 }
 
 function failTask(state: TaskState, signal: AbortSignal, error: unknown): void {
+  if (!signal.aborted && error instanceof AuthenticationRequiredError)
+    return holdTask(
+      state,
+      new StepInputRequired(
+        `${error.nextAction} Confirm here when login is complete to resume this step.`,
+        error.message,
+      ),
+    );
+  if (!signal.aborted && error instanceof StepInputRequired) return holdTask(state, error);
   state.status = signal.aborted || isCancellation(error) ? "cancelled" : "failed";
   if (state.status !== "cancelled" && error instanceof RefactorError) state.status = "refactor";
   setStepStatus(state, state.status);
   state.error = state.status === "cancelled" ? "Cancelled." : errorMessage(error);
+}
+
+function isModelResult(error: unknown): boolean {
+  return (
+    error instanceof StepFailedError ||
+    error instanceof RefactorError ||
+    error instanceof StepInputRequired
+  );
 }

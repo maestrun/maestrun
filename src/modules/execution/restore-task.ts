@@ -1,6 +1,7 @@
 import type { TaskState } from "../../contracts/run.js";
 import { invalidCheckpoint } from "./checkpoint-error.js";
 import { reconcileStages } from "./replan-checkpoint.js";
+import { pendingInput } from "./task-input.js";
 
 function checkMatch(current: TaskState, previous: TaskState): void {
   if (
@@ -49,6 +50,15 @@ export function restoreTask(
 }
 
 function cleanRestored(restored: TaskState, previous: TaskState): TaskState {
+  delete restored.repairAttempts;
+  const request = pendingInput(restored);
+  if (request && restored.status !== "completed") {
+    if (restored.steps?.[restored.completedSteps]?.id !== request.stage)
+      invalidCheckpoint(`stage awaiting input changed for task ${restored.id}`);
+    restored.status = "on_hold";
+    const step = restored.steps?.find((entry) => entry.id === request.stage);
+    if (step) step.status = "on_hold";
+  }
   if (!restored.worktree && restored.status === "completed") delete restored.integration;
   if (!previous.tokenUsage && previous.completedSteps > 0) restored.tokenUsageIncomplete = true;
   if (restored.status === "completed" || typeof restored.error !== "string") delete restored.error;

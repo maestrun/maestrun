@@ -30,7 +30,7 @@ export function startStep(state: TaskState, stage: Stage, context: RunContext): 
 
 export function setStepStatus(
   state: TaskState,
-  status: "running" | "completed" | "failed" | "refactor" | "cancelled",
+  status: "running" | "completed" | "failed" | "refactor" | "cancelled" | "on_hold",
 ): void {
   const step = state.steps?.find((entry) => entry.id === state.step);
   if (step) {

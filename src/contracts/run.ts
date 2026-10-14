@@ -11,6 +11,13 @@ export type TaskMessage = {
   error?: string;
 };
 export type TaskConversation = { active: boolean; messages: TaskMessage[] };
+export type TaskInputRequest = {
+  id: string;
+  stage: string;
+  question: string;
+  summary: string;
+  answer?: string;
+};
 export type TaskRerun = {
   startedAt: string;
   fromStep: string;
@@ -27,7 +34,7 @@ export type TaskStep = {
   effort?: Effort;
   tokenUsage?: TokenUsage;
   tokenUsageIncomplete?: boolean;
-  status: "pending" | "running" | "completed" | "failed" | "refactor" | "cancelled";
+  status: "pending" | "running" | "completed" | "failed" | "refactor" | "cancelled" | "on_hold";
 };
 
 export type StepInput = Readonly<{
@@ -40,6 +47,7 @@ export type StepInput = Readonly<{
   timeoutMs: number;
   conversationId?: string;
   feedback?: string;
+  inputRequests?: readonly TaskInputRequest[];
   previousResults?: readonly Readonly<{ stage: string; summary: string }>[];
   /** Token increments reported by the executor, including failed attempts. */
   onUsage?: (usage: TokenUsage) => void;
@@ -59,7 +67,17 @@ export type TaskState = {
   definition?: string;
   plannedStages?: string[];
   title: string;
-  status: "pending" | "running" | "completed" | "failed" | "blocked" | "cancelled" | "refactor";
+  status:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "blocked"
+    | "cancelled"
+    | "refactor"
+    | "on_hold";
+  inputRequests?: TaskInputRequest[];
+  repairAttempts?: number;
   steps?: TaskStep[];
   reruns?: TaskRerun[];
   step?: string;

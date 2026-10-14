@@ -4,7 +4,7 @@ import { stateLine } from "./run-report.repository.js";
 import { sessionReport } from "./run-session.repository.js";
 import { readConversation } from "./task-conversation.repository.js";
 import { taskInstructions } from "./task-instructions.js";
-import { selectedIndex, visibleTasks } from "./run-view-state.js";
+import { FILTERS, selectedIndex, visibleTasks } from "./run-view-state.js";
 
 import type { SessionView } from "./execution.types.js";
 
@@ -37,6 +37,7 @@ export function closeSessionView(state: SessionView): void {
 export async function refreshSessionView(state: SessionView): Promise<void> {
   const report = await sessionReport(state.cwd, state.session);
   if (!report) return;
+  focusPendingInput(state, report);
   await Promise.all(
     report.tasks.map(async (task) => {
       if (!task.conversationId) return;
@@ -54,6 +55,25 @@ export async function refreshSessionView(state: SessionView): Promise<void> {
   openSessionView(state);
   if (state.view) state.view.update();
   else if (!state.choosing) logUpdates(state, report);
+}
+
+function focusPendingInput(state: SessionView, report: RunReport): void {
+  const held = report.tasks.find((task) => task.status === "on_hold");
+  if (
+    !held ||
+    state.choosing ||
+    state.selection?.details ||
+    state.report?.tasks.some((task) => task.status === "on_hold")
+  )
+    return;
+  state.selection ??= { filter: 0, selected: "", details: false, scroll: 0 };
+  delete state.selection.flowStep;
+  Object.assign(state.selection, {
+    filter: FILTERS.indexOf("Input"),
+    selected: held.id,
+    details: false,
+    scroll: 0,
+  });
 }
 
 async function loadStepConversations(cwd: string, task: TaskState): Promise<void> {

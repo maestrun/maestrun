@@ -1,13 +1,13 @@
 import type { StepInput } from "../../contracts/run.js";
 import { VERSION } from "../../shared/version.js";
 import { isRecord } from "../../contracts/workflow.js";
-import { UserError } from "../../shared/errors.js";
 import { CODEX_RESTRICTIONS } from "../executors/index.js";
 import { taskModelProcess } from "./task-model-process.js";
 import { CODEX_NETWORK_ARGUMENTS } from "./step-protocol.js";
 import type { ModelProcess } from "./task-model-process.js";
 import type { TaskChannel } from "./task-conversation.js";
 import { tokenUsageCollector } from "../../shared/token-usage.js";
+import { respondToTaskRequest, codexTaskFailure as failure } from "./codex-task-input.js";
 
 type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void };
 type State = {
@@ -19,12 +19,6 @@ type State = {
   text: string;
   streamed: Set<unknown>;
 };
-const failure = (): UserError =>
-  new UserError(
-    "Codex task conversation failed.",
-    "Update Codex and inspect the task before retrying.",
-  );
-
 export async function codexTaskSession(
   input: StepInput,
   prompt: string,
@@ -91,16 +85,13 @@ async function start(state: State, input: StepInput, prompt: string): Promise<vo
 
 function receive(state: State, value: Record<string, unknown>): void {
   if (value.id !== undefined && typeof value.method === "string") {
-    state.model.send({
-      id: value.id,
-      error: { code: -32601, message: "Unsupported task request" },
-    });
+    respondToTaskRequest(value, state);
     return;
   }
   if (typeof value.id === "number") {
     const pending = state.pending.get(value.id);
     state.pending.delete(value.id);
-    if (value.error) pending?.reject(failure());
+    if (value.error) pending?.reject(failure(value.error));
     else pending?.resolve(value.result);
     return;
   }
@@ -109,7 +100,7 @@ function receive(state: State, value: Record<string, unknown>): void {
   if (value.method !== "turn/completed") return;
   state.turn = "";
   if (!isRecord(params.turn) || params.turn.status !== "completed") {
-    state.model.fail(failure());
+    state.model.fail(failure(isRecord(params.turn) ? params.turn.error : undefined));
     return;
   }
   void state.channel

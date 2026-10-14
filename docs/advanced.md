@@ -194,6 +194,12 @@ Every task runs the configured stages after Planning. Completed tasks and steps 
 
 Model-reported failure/refactor gets **up to 5 automatic repair cycles per task per run**, restarting at Implementation when possible. Set `execution.maxRepairs` to change the limit; `0` disables repairs. Exhausting the limit blocks dependants; independent tasks can continue. Executor errors, invalid output, timeouts, and cancellation stop that task immediately. Repair evidence is retained in the report.
 
+When a model needs a user decision (including a layout choice), clarification, or external action such as PR approval or login, it returns `{"status":"needs_input","question":"...","summary":"progress and context for resuming"}`. External waits can return `on_hold` with the same question/summary fields. The summary explains why work stopped; the question asks for the missing decision or confirmation that the external action is complete. Native Codex input requests also enter this flow. The task and current stage become `on_hold`; the model process closes, preserving the task files and completed stages. Waiting does not use the stage timeout or consume/reset the repair budget. Independent tasks remain eligible for execution; dependants wait for the held task to complete. Parallel execution still schedules and integrates tasks in batches, so an answered task resumes when the current batch ends and an execution slot is available.
+
+The terminal shows an orange border, **On hold · awaiting your input**, the reason for waiting, and the model's question. The **Input** list contains all pending tasks; **H** opens it, **↑ / ↓** selects a task, **Enter** opens the full question and context, and **I** accepts an answer. **Esc** leaves the question pending. Answering one task does not release other held tasks. Questions and answers are retained in `.maestrun/run.json`; a fresh model session resumes the same stage using the saved context, answers, and existing files. This is a clarification flow; it does not grant additional executor permissions or approve privileged commands.
+
+Background and noninteractive runs remain alive while input is pending. Their report/log includes the question and reconnect instructions. Run `maestrun` in a terminal to answer. Cancellation preserves the question; `maestrun run` restores it without calling the model again until answered. After a worker crash, follow the existing stale-lock recovery instructions before resuming. Unanswered questions do not expire automatically.
+
 Executors can edit the workspace and run checks; prompts prohibit commits, pushes, and deployment. Success is the executor's reported result. Local server checks should start the server and test it in the same shell command, especially under Linux/WSL sandboxing.
 
 ### Parallel worktrees
@@ -236,7 +242,8 @@ Doctor checks Node/platform, executor compatibility/authentication, config/layou
 | L (in task details)     | Toggle final results and full recorded logs for each step         |
 | F                       | Toggle flowchart                                                  |
 | PgUp / PgDn, Home / End | Browse steps or jump to first/last                                |
-| I                       | Send instructions to a running model task                         |
+| H                       | List tasks awaiting user input                                    |
+| I                       | Answer a held task or send instructions to a running model task   |
 | Esc                     | Leave details/input; close a finished run                         |
 | Ctrl+C                  | Choose background execution or cancellation; plain output cancels |
 
@@ -338,23 +345,24 @@ maestrun sample advanced            # Advanced
 maestrun sample advanced --background
 ```
 
-| Sample                                   | Tasks                                | Scenarios                                                                                   |
-| ---------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------- |
-| [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation     | Sequential implementation/tests, dependency and regression cases                            |
-| [Advanced](../examples/advanced/plan.md) | Missing input; add + clamp → compose | Independent failure, parallel worktrees, automatic QA repair and dependent task integration |
+| Sample                                   | Tasks                                                  | Scenarios                                                                                |
+| ---------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation                       | Sequential implementation/tests, dependency and regression cases                         |
+| [Advanced](../examples/advanced/plan.md) | Missing input; approval on hold; add + clamp → compose | On hold confirmation, independent failure, parallel worktrees, QA repair and integration |
 
-Tasks use only Node.js built-ins. No installs or servers. Simple needs four model stages; advanced normally needs twenty-one: fifteen for add, clamp, and compose (including one intentional QA repair), plus six attempts at the missing-input task (the initial attempt and five repairs). QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
+Tasks use only Node.js built-ins. No installs or servers. Simple needs four model stages; advanced normally needs twenty-six: fifteen for add, clamp, and compose (including one intentional QA repair), plus six attempts at the missing-input task (the initial attempt and five repairs), and five calls for the confirmation task (the initial hold and four stages after answering). QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
 
-The advanced sample starts `sample-missing-input` alongside `sample-add`. The missing-input task checks an intentionally absent `sample-required-input.json`, reports the actual ENOENT error, and exhausts its repair budget. It has no dependants. The remaining tasks continue through Tests, QA, Review, and Integration; compose depends only on add and clamp. Expected final task statuses:
+The advanced sample starts `sample-missing-input` alongside `sample-add`. The missing-input task checks an intentionally absent `sample-required-input.json`, reports the actual ENOENT error, and exhausts its repair budget. It has no dependants. The confirmation task simulates waiting for PR approval and asks you to type `continue` through **H → I**. Its orange border and message remain until answered; no real PR or login is involved. The remaining tasks continue through Tests, QA, Review, and Integration; compose depends only on add and clamp. Expected final task statuses:
 
 ```text
 sample-missing-input  failed     Implementation: sample-required-input.json is missing
 sample-add            completed  Integrated
 sample-clamp          completed  Repaired after QA feedback, then integrated
 sample-compose        completed  Consumed both integrated results
+sample-confirmation   completed  User typed continue; simulated approval recorded
 ```
 
-The run intentionally ends with **3 completed tasks and 1 failed task**. In a terminal, the failed task stays visible and the view remains open to inspect the rest of the workflow: select a task and press **Enter** for step results or **L** for recorded logs. Noninteractive execution exits with **code 1 after all runnable tasks finish**. Repeating the run retries the missing-input task; it will fail again while its input remains absent. No manual recovery is needed for the other three tasks to finish.
+The run intentionally ends with **4 completed tasks and 1 failed task** after the confirmation. In a terminal, the failed task stays visible and the view remains open to inspect the rest of the workflow: select a task and press **Enter** for step results or **L** for recorded logs. Noninteractive execution waits for the confirmation too; reconnect from a terminal in the sample directory to answer. It exits with **code 1 after all runnable tasks finish**. Repeating the run retries the missing-input task; it will fail again while its input remains absent. No manual recovery is needed for the other three tasks to finish.
 
 Each invocation creates a fresh `.maestrun/samples/run-*` directory and prints its path. Advanced requires Git 2.38+ and automatically creates a separate repository there. In a terminal, choose executor/model/effort; otherwise saved assignments are required. Both use a five-cycle repair limit and exclude plugins, custom steps and target overrides.
 
@@ -374,7 +382,7 @@ Press **Enter** on a task to inspect its result and stage token usage:
 
 ### Advanced sample screenshots
 
-Run `maestrun sample advanced` to see an independent failure while the remaining tasks continue through automatic QA repair and integration. The captures below show the successful path from the earlier three-task sample, before the independent missing-input task was added. They use Codex; timing, token usage, and model output vary between runs. The current four-task sample ends with the missing-input task failed and the same three successful tasks completed, as shown in the status example above.
+Run `maestrun sample advanced` to see an independent failure while the remaining tasks continue through automatic QA repair and integration. The captures below show the successful path from the earlier three-task sample, before the independent missing-input task was added. They use Codex; timing, token usage, and model output vary between runs. The current five-task sample ends with the missing-input task failed and the same three successful tasks plus the confirmation task completed, as shown in the status example above.
 
 The add and clamp tasks start in parallel, while the composition task waits for both results:
 

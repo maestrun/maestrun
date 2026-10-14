@@ -4,7 +4,7 @@ import type { Layout } from "../../contracts/layout.js";
 
 import { taskDisplaySteps } from "./task-display-steps.js";
 
-export const FILTERS = ["All", "Working", "Done", "Waiting", "Issues"] as const;
+export const FILTERS = ["All", "Working", "Done", "Waiting", "Issues", "Input"] as const;
 export type ViewState = {
   layout?: Layout;
   filter: number;
@@ -25,6 +25,7 @@ export function visibleTasks(report: RunReport, filter: number): TaskState[] {
     ["completed"],
     ["pending"],
     ["failed", "blocked", "cancelled", "refactor"],
+    ["on_hold"],
   ];
   return report.tasks.filter((task) => filter === 0 || statuses[filter]?.includes(task.status));
 }
@@ -41,6 +42,13 @@ export function navigateView(state: ViewState, report: RunReport, key: Key): voi
   if (["pageup", "pagedown", "home", "end"].includes(key.name ?? ""))
     return navigateFlow(state, report, key);
   if (key.name === "f") return toggleFlow(state);
+  if (key.name === "h") {
+    state.filter = FILTERS.indexOf("Input");
+    state.details = false;
+    state.scroll = 0;
+    delete state.flowStep;
+    return;
+  }
   if (key.name === "escape") {
     delete state.flowStep;
     state.details = false;

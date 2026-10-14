@@ -17,6 +17,16 @@ export class BackError extends Error {
 export class RefactorError extends UserError {}
 
 export class StepFailedError extends UserError {}
+export class AuthenticationRequiredError extends UserError {}
+
+export class StepInputRequired extends Error {
+  constructor(
+    readonly question: string,
+    readonly summary: string,
+  ) {
+    super(question);
+  }
+}
 
 export class CancelError extends Error {
   constructor() {
@@ -39,7 +49,9 @@ export function fileFailure(message: string): UserError {
 const AUTH_COMMANDS: Readonly<Record<string, string>> = {
   "Grok Build": "grok login",
   Codex: "codex login",
+  codex: "codex login",
   "Claude Code": "claude auth login",
+  claude: "claude auth login",
   "GitHub Copilot": "copilot login",
 };
 
@@ -56,7 +68,10 @@ export function executorFailure(id: string, details: string): UserError {
   }
   if (/auth|login|sign in|unauthorized|401/iu.test(details)) {
     const login = AUTH_COMMANDS[id] ?? "claude auth login";
-    return new UserError(`${id} requires authentication.`, `Run ${login}, then retry the command.`);
+    return new AuthenticationRequiredError(
+      `${id} requires authentication.`,
+      `Run ${login}, then retry the command.`,
+    );
   }
   if (/quota|rate.?limit|usage.?limit|429/iu.test(details)) {
     return new UserError(

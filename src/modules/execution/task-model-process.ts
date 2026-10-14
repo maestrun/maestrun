@@ -20,14 +20,14 @@ export function taskModelProcess(
 ): ModelProcess {
   const result = completion();
   const child = startProcess(command);
+  const diagnostics = processDiagnostics(child);
   const closed = new Promise<void>((resolve) => child.once("close", () => resolve()));
   const fail = (error: Error): void => result.reject(error);
   const cleanup = monitorProcess(child, command, fail);
   const lines = listen(child, { receive, usage }, fail);
   child.on("error", () => fail(executorFailure(command.executable, "")));
-  child.on("close", () => fail(executorFailure(command.executable, "")));
+  child.on("close", () => fail(executorFailure(command.executable, diagnostics())));
   child.stdin.on("error", () => fail(executorFailure(command.executable, "")));
-  child.stderr.resume();
   return {
     done: result.promise,
     fail,
@@ -42,6 +42,14 @@ export function taskModelProcess(
       await closed;
     },
   };
+}
+
+function processDiagnostics(child: ChildProcessWithoutNullStreams): () => string {
+  let text = "";
+  child.stderr.on("data", (chunk: Buffer) => {
+    text = (text + chunk.toString()).slice(-8000);
+  });
+  return () => text;
 }
 
 function completion(): {
