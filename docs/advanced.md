@@ -277,6 +277,12 @@ Project columns replace global columns; flowchart fields merge. Reopen the view 
 
 ## Extensions and host plugins
 
+### VS Code extension
+
+The [Maestrun extension for VS Code](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode) lets you configure workflows, generate plans, run or resume tasks, inspect flowcharts and logs, and answer pending questions from your editor. It requires the CLI and an authenticated executor in the same environment as your project.
+
+See the [illustrated VS Code guide](vscode.md) for installation, sidebar and editor views, multiple projects, examples, and troubleshooting.
+
 ### Runtime extensions
 
 Register a reviewed project-local module and authorize it for each run:
