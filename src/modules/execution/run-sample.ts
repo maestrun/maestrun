@@ -17,7 +17,6 @@ function sampleConfig(
 ): Config {
   const planning = assignment ?? config?.stages[0];
   if (!planning) throw new UserError("No planning assignment was found.", "Run maestrun init.");
-  const maxRepairs = mode === "qa-refactor" ? config?.execution?.maxRepairs : 5;
   return {
     version: 1,
     stages: (mode === "simple" ? DEFAULT_STAGES : STAGES).map((id) => {
@@ -29,7 +28,7 @@ function sampleConfig(
       mode: mode === "advanced" ? "parallel" : "sequential",
       concurrency: mode === "advanced" ? 2 : 1,
       background: false,
-      ...(maxRepairs !== undefined ? { maxRepairs } : {}),
+      maxRepairs: mode === "simple" ? 0 : 1,
     },
     ...(config?.timeoutMs !== undefined ? { timeoutMs: config.timeoutMs } : {}),
   };
@@ -78,7 +77,7 @@ export async function runSample(
   );
   if (input.mode === "advanced")
     console.log(
-      "Expected: missing input exhausts five repairs and fails; answer the simulated approval with continue (H → I); the other four tasks finish, including QA repair and integration. The final run status is failed (exit 1).",
+      "Expected: missing input fails after one repair; answer the simulated approval with continue (H → I); the other four tasks finish, including QA repair and integration. The final run status is failed (exit 1).",
     );
   try {
     await runSession({ cwd: directory, background: input.background ?? false });

@@ -5,36 +5,37 @@
       "id": "planning",
       "executor": "codex",
       "model": "gpt-6.1-sol",
-      "effort": "xhigh"
+      "effort": "low"
     },
     {
       "id": "implementation",
       "executor": "codex",
       "model": "gpt-6.1-sol",
-      "effort": "xhigh"
+      "effort": "low"
     },
     {
       "id": "testing",
       "executor": "codex",
       "model": "gpt-6.1-sol",
-      "effort": "xhigh"
+      "effort": "low"
     },
     {
       "id": "qa",
       "executor": "codex",
       "model": "gpt-6.1-sol",
-      "effort": "xhigh"
+      "effort": "low"
     },
     {
       "id": "review",
       "executor": "codex",
       "model": "gpt-6.1-sol",
-      "effort": "xhigh"
+      "effort": "low"
     }
   ],
   "execution": {
     "mode": "sequential",
     "concurrency": 1,
-    "background": false
+    "background": false,
+    "maxRepairs": 1
   }
 }

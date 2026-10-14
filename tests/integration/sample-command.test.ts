@@ -16,7 +16,7 @@ test("sample creation preserves project settings and fills in the built-in workf
     ...RUN_CONFIG,
     stages: [...RUN_CONFIG.stages, { id: "custom:PR", executor: "codex", model: "pr-model" }],
     plugins: ["./user-plugin.mjs"],
-    execution: { mode: "parallel", concurrency: 3, background: true },
+    execution: { mode: "parallel", concurrency: 3, background: true, maxRepairs: 50 },
     timeoutMs: 12345,
   });
   const before = await readFile(join(project.cwd, ".maestrun/config.json"), "utf8");
@@ -26,7 +26,12 @@ test("sample creation preserves project settings and fills in the built-in workf
   expect(config?.stages[1]).toEqual(RUN_CONFIG.stages[1]);
   expect(config?.stages[2]).toEqual(RUN_CONFIG.stages[2]);
   expect(config?.stages[3]).toEqual({ ...RUN_CONFIG.stages[0], id: "qa" });
-  expect(config?.execution).toEqual({ mode: "sequential", concurrency: 1, background: false });
+  expect(config?.execution).toEqual({
+    mode: "sequential",
+    concurrency: 1,
+    background: false,
+    maxRepairs: 1,
+  });
   expect(config?.timeoutMs).toBe(12345);
   expect(config?.plugins).toBeUndefined();
   expect(await loadTasks(directory, "plan.md")).toHaveLength(3);
@@ -66,7 +71,7 @@ test(
       ...expected,
       ...expected,
     ]);
-    expect(calls[7]?.input).toContain("Previous failure: Automatic repair (1/5) after qa");
+    expect(calls[7]?.input).toContain("Previous failure: Automatic repair (1/1) after qa");
   },
 );
 
@@ -86,7 +91,7 @@ test("sample run exposes the repair in the terminal and stays open for navigatio
       config?.stages.every((stage) => stage.model === "sample-model" && stage.effort === "high"),
     ).toBe(true);
     cli.send("\x1b[B");
-    await cli.wait("Automatic repair (1/5) after qa");
+    await cli.wait("Automatic repair (1/1) after qa");
     await cli.wait("Esc close");
     cli.send("\r");
     await cli.wait("Task details");

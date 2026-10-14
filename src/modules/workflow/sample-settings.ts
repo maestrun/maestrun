@@ -14,7 +14,7 @@ export async function selectSampleAssignment(
   const initial =
     config?.stages.find((stage) => stage.id === "implementation") ?? config?.stages[0];
   input.ui.log(
-    "Choose executor, model and effort for all sample stages. Project settings stay unchanged.",
+    "Choose executor, model and effort for all sample stages. Low effort is suggested when supported; project settings stay unchanged.",
   );
   try {
     return await selectAssignment(
@@ -23,7 +23,7 @@ export async function selectSampleAssignment(
         services,
         catalog: (executor) => services.models(executor, input.cwd, input.signal),
       },
-      initial ?? { executor: "codex", model: "" },
+      { ...(initial ?? { executor: "codex", model: "" }), effort: "low" },
     );
   } catch (error) {
     if (error instanceof BackError) throw new CancelError();

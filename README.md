@@ -138,7 +138,7 @@ maestrun sample          # 2 sequential tasks: implementation and tests
 maestrun sample advanced # 5 tasks: on hold, independent failure, QA repair, and integration
 ```
 
-Each run creates a separate sample folder and uses your selected model. Both samples use Node.js built-ins, with no dependency installation. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
+Each run creates a separate sample folder and uses your selected model. Both samples use tiny functions and Node.js assertions, with no dependency installation. Simple uses four model stages and no automatic repairs; advanced allows one repair per task. Select low effort for a lighter run; real executor usage still applies. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
 
 Advanced includes a simulated PR approval: press **Enter** on the held task in **All** and type `continue`. No real PR or login is needed. One independent task intentionally fails while the other four complete. Noninteractive runs wait for the same confirmation; reconnect in a terminal to answer. The final run status is failed (exit code 1) after the remaining workflow finishes.
 

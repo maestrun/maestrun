@@ -4,6 +4,8 @@ Contributions are welcome: bug fixes, features, tests, documentation, and reprod
 
 Every repository change must go through a pull request, including code, tests, documentation, configuration, dependencies, and agent guidance. This applies to maintainers and contributors alike. Before editing any files, create or switch to a topic branch for the task. Make all edits and commits on that branch, never on the default branch or in detached HEAD. If changes already exist on the default branch, preserve them by creating a topic branch before continuing. Do not push changes directly to the default branch or bypass the PR workflow.
 
+For agent-assisted work, finish implementation and validation locally and report the result. Create or update a PR only when the user explicitly requests it after the task is ready. A task prompt does not authorize opening a PR (including a draft) or pushing a branch for that purpose. This timing rule does not remove the requirement to merge through a PR.
+
 ## Before you start
 
 Read the [README](README.md) and the relevant sections of the [advanced guide](docs/advanced.md). Check existing issues and pull requests for related work. For a substantial feature or breaking change, open an issue first to discuss the expected behavior and scope.
@@ -100,7 +102,7 @@ For changes to terminal output or interactive prompts, manually exercise the aff
 
 ## Submit your pull request
 
-Push your branch to your fork and open a pull request against the upstream repository's default branch. Use a clear title that describes the change, and write the description in English.
+When the user requests a PR for agent-assisted work, push your branch to your fork and open a pull request against the upstream repository's default branch. Use a clear title that describes the change, and write the description in English.
 
 Use the [PR template](.github/pull_request_template.md) so maintainers can build a version changelog directly from merged PRs:
 
