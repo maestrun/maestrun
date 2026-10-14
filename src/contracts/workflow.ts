@@ -50,6 +50,7 @@ export type Draft = Readonly<{
   guidance?: Guidance;
   planMode?: "simple" | "advanced" | "existing";
   planFolder?: string;
+  previousPlan?: string;
 }>;
 export type Model = Readonly<{
   id: string;

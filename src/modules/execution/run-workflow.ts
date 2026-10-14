@@ -38,7 +38,9 @@ async function previewRun(
   const report = await resumeReport(input.cwd, config, tasks);
   if (config.execution?.mode === "parallel") await checkWorktreeRepository(input.cwd);
   for (const task of tasks) {
-    const completed = report.tasks.find((entry) => entry.id === task.id)?.completedSteps ?? 0;
+    const state = report.tasks.find((entry) => entry.id === task.id);
+    const completed =
+      state?.status === "completed" ? config.stages.length : (state?.completedSteps ?? 0);
     const stages = taskStages(config, task)
       .slice(completed)
       .map((stage) => `${stage.id}: ${stage.executor}/${stage.model}`);

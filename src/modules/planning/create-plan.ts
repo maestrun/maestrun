@@ -1,6 +1,6 @@
 import { generateInteractivePlan } from "./generate-interactive-plan.js";
 import { join } from "node:path";
-import { atomicWrite, snapshotFile } from "../../shared/atomic.js";
+import { snapshotFile } from "../../shared/atomic.js";
 import type { FileSnapshot } from "../../shared/atomic.js";
 import { loadConfig } from "../../config/index.js";
 import { executorLabel } from "../../contracts/workflow.js";
@@ -13,10 +13,11 @@ import {
   generateGrok,
   detectExecutor,
 } from "../executors/index.js";
-import { planningPrompt, renderPlan } from "./prompt.js";
+import { planningPrompt } from "./prompt.js";
 import { runPlanWizard } from "./plan-wizard.js";
 import type { CommandInput } from "../../shared/command.types.js";
-import { saveAdvancedPlan } from "./advanced-plan.js";
+import { lockRun } from "../execution/index.js";
+import { previousPlan, saveGeneratedPlan } from "./replanning.js";
 
 type PlanInput = CommandInput & { interactive?: boolean };
 type Services = Readonly<{
@@ -82,7 +83,26 @@ export async function createPlan(
     `Requirements and planning options: ${((Date.now() - collectedAt) / 1000).toFixed(1)} s`,
   );
   if (input.signal.aborted) throw new CancelError();
-  await generateAndSave(input, services, { draft, path, plan });
+  await generateLocked(input, services, { draft, path, plan });
+}
+
+async function generateLocked(
+  input: PlanInput,
+  services: Services,
+  output: Readonly<{ draft: Draft; path: string; plan: FileSnapshot }>,
+): Promise<void> {
+  const { draft, path, plan } = output;
+  const release = await lockRun(input.cwd);
+  try {
+    const progress = await previousPlan(input.cwd, plan);
+    await generateAndSave(input, services, {
+      draft: { ...draft, ...(progress ? { previousPlan: progress } : {}) },
+      path,
+      plan,
+    });
+  } finally {
+    await release();
+  }
 }
 
 async function generateAndSave(
@@ -90,7 +110,7 @@ async function generateAndSave(
   services: Services,
   output: Readonly<{ draft: Draft; path: string; plan: FileSnapshot }>,
 ): Promise<void> {
-  const { draft, path, plan } = output;
+  const { draft } = output;
   const stage = draft.config.stages[0];
   if (!stage) throw new Error("Missing planning stage");
   requireReady(
@@ -108,11 +128,7 @@ async function generateAndSave(
       "The executor returned an empty plan.",
       "Adjust the planning model with maestrun init, then run maestrun plan again.",
     );
-  const markdown =
-    draft.planMode === "advanced" ? await saveAdvancedPlan(input, draft, content) : content;
-  if (input.signal.aborted) throw new CancelError();
-  await atomicWrite(path, renderPlan(draft.config, markdown, draft.guidance), plan);
-  input.ui.log(`Plan saved: ${path}`);
+  await saveGeneratedPlan(input, output, content);
 }
 
 async function timedGeneration(

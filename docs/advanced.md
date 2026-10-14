@@ -126,6 +126,10 @@ Both planning modes require a terminal and run environment checks first. Existin
 
 Planning includes project guidance automatically: skills under `.agents`, `.codex`, `.claude`, and `.github`; rules under their rule/instruction folders; root `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`. The preview lists loaded files. Replacing a plan requires confirmation; failed or cancelled generation preserves the previous plan.
 
+After executing tasks, you can change workflow steps with `maestrun init --advanced`, then generate a new plan with `maestrun plan`. When pasting requirements, choose **Simple** or **Advanced**; advanced replanning uses a new folder and preserves the previous documents. Generation reads the previous tasks (including linked advanced documents) and saved progress, then validates the new tasks before replacing the plan.
+
+Completed tasks with unchanged IDs and definitions stay completed, with their original step history. Added steps apply to unfinished and new tasks; they are not recorded as having run on completed tasks. Give changed scope or additional verification a new task ID. For unfinished tasks, completed steps must remain in the same order at the beginning of the workflow. Generation rejects incompatible changes without replacing the plan or resetting progress. A later step change requires another plan.
+
 Planning restricts tools to reading. These restrictions are not a universal OS sandbox; executor policies still apply. Interactive Codex uses one planning session, with its timeout including answer time. Claude, Copilot, and Grok apply the timeout per request.
 
 ### Write tasks
@@ -218,7 +222,7 @@ After task failures, the interactive task view stays open: the failed stage is r
 | Missing template file          | Copy it into the project or remove its stage/plugin reference                                                |
 | Stale lock after a crash       | Confirm the worker and executors stopped before removing stale `session.json`, `session.lock`, or `run.lock` |
 
-**Preserve `.maestrun/run.json`.** Changed task definitions or incompatible stage sequences stop resume; use new task IDs for different work. Interrupted steps may run again, so inspect partial changes first. Tasks removed from the current plan retain their progress in `archivedTasks`.
+**Preserve `.maestrun/run.json`.** Changed task definitions or unvalidated stage sequences stop resume; regenerate the plan after changing steps and use new task IDs for different work. Interrupted steps may run again, so inspect partial changes first. Tasks removed from the current plan retain their progress in `archivedTasks`.
 
 Doctor checks Node/platform, executor compatibility/authentication, config/layout, referenced files, and locks without generation or plugin execution. Missing unused executors are warnings; unusable configured executors and execution locks are errors. It never deletes locks. Exit codes: **0** success/detachment, **1** failure, **130** cancellation.
 
