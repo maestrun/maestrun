@@ -1,8 +1,12 @@
-# Advanced sample: on hold, independent failure, QA repair and integration
+# Advanced: parallel tasks, failure, repair and on hold
 
-Run `maestrun sample advanced`. Git 2.38+ is required; the command initializes a repository only in the new sample directory.
-Five tiny tasks use Implementation → Tests → QA → Review. One independent task deliberately fails because an externally supplied input is absent. No other task depends on it: add and clamp still integrate from their own worktrees, and compose waits only for those two results. The repair budget is five cycles. The missing-input task remains failed after exhausting that budget; clamp needs one QA repair. QA requests a correction and the workflow automatically returns to Implementation, repeats Tests and QA, then continues through Review and Integration. Each task edits only its own files so the successful tasks integrate without an intentional conflict. A separate confirmation task simulates waiting for external approval, enters On hold, and resumes only after the user types `continue`. Expected outcome after that response: four completed tasks and one failed task, with the terminal view still available for inspection. Noninteractive execution waits for the same confirmation; reconnect from a terminal in the sample directory to answer. It exits with code 1 after the other tasks finish.
-Use only Node.js ES modules and built-in node:test/node:assert/strict. No dependencies, installs, servers, network or full-repository scans. Inspect only task files. Keep each stage short and return brief, truthful evidence. QA/Review inspect only the explicit criteria; do not invent extra scope.
+Run `maestrun sample advanced` (Git 2.38+). Five tasks demonstrate parallel
+worktrees, an independent failure, one QA repair, integration and user input.
+Implementation → Tests → QA → Review; planning is supplied. One repair per task.
+After answering `continue`: four completed tasks, one failed task, exit 1.
+Use only named files and Node.js built-ins. No installs, network, repository scans,
+extra features or documentation. Run only your stage; return a short JSON summary
+with actual evidence. QA and Review reuse Tests evidence instead of rerunning tests.
 
 ## Tasks
 
@@ -10,40 +14,51 @@ Use only Node.js ES modules and built-in node:test/node:assert/strict. No depend
 
 - Depends on: none
 
-This isolated task demonstrates a real missing-input error without blocking unrelated work. The externally supplied file sample-required-input.json is intentionally absent from the fresh sample. Do not create, replace, or fabricate that input, including during automatic repairs. Do not modify any files or inspect other tasks' files.
-
-Implementation runs `node --input-type=module -e 'import { readFileSync } from "node:fs"; readFileSync("sample-required-input.json", "utf8");'`. Report the actual ENOENT failure with status failed and a short summary naming sample-required-input.json. Each retry checks the same prerequisite and reports the observed failure truthfully; previous feedback does not authorize inventing the missing input. The five repair cycles are expected to be exhausted. Do not return completed while the file is absent. Tests, QA, Review, and Integration remain unexecuted for this task. No other task may depend on this task or its input.
+Implementation: run `node --input-type=module -e 'import { readFileSync } from "node:fs"; readFileSync("sample-required-input.json", "utf8");'`.
+Report the real ENOENT with status failed, including on the single retry.
+Never create the missing input or edit any files. Other stages remain unexecuted.
+No other task depends on this task.
 
 ### Task sample-add: Add two numbers independently
 
 - Depends on: none
 
-Use only Node.js built-ins (node:test, node:assert/strict), no dependencies or installs. Inspect only the named files, run only your assigned stage and return a brief result with real evidence. No extra features or documentation.
-
-Implementation creates add.mjs exporting add(a,b) as a+b and add.test.mjs with exactly two cases: add(2,3)=5 and add(-2,3)=1. Inputs are already numbers; validation is out of scope. Tests runs `node --test add.test.mjs`. QA checks those criteria; Review checks clarity. Do not read or modify another task's other files.
+Implementation: create add.mjs exporting `add(a,b) => a+b` and add.test.mjs
+with node:assert/strict checking `add(2,3) === 5`. Inputs are numbers.
+Tests: run `node add.test.mjs` once. QA: check that criterion using test evidence.
+Review: inspect only these two files for clarity.
 
 ### Task sample-clamp: Clamp a value and demonstrate one QA repair
 
 - Depends on: none
 
-Use only Node.js built-ins (node:test, node:assert/strict), no dependencies or installs. Inspect only the named files, run only your assigned stage and return a brief result with real evidence. No extra features or documentation.
-
-Final scope: clamp.mjs exports clamp(value,min,max) preserving in-range values and enforcing both bounds. Inputs are finite numbers with min <= max; validation is out of scope. Acceptance: clamp(5,0,10)=5, clamp(-2,0,10)=0, clamp(15,0,10)=10. This isolated sample deliberately demonstrates repair. First Implementation without Previous failure: write Math.max(min,value) and clamp.test.mjs with only the first two cases; disclose the missing upper bound. First Tests runs `node --test clamp.test.mjs` and reports that limited coverage, without adding the third case. First QA identifies the missing upper bound and returns status refactor with a file reference; do not fix code. On retry with Previous failure, Implementation uses Math.min(max,Math.max(min,value)) and adds the third regression case. Tests reruns the same command; QA approves only when all criteria hold; Review then checks clarity. Never repeat the intentional omission after feedback. Do not touch add.mjs or another task's other files.
+Final criterion: clamp.mjs exports `clamp(value,min,max)` enforcing both bounds.
+Inputs are numbers with min <= max; no validation.
+First Implementation: use `Math.max(min,value)` and create clamp.test.mjs with
+node:assert/strict checking `clamp(-2,0,10) === 0`; disclose the omitted upper bound.
+First Tests: run `node clamp.test.mjs` once; keep this intentional limited coverage.
+First QA: report the missing upper bound in clamp.mjs with status refactor; do not edit.
+Implementation after Previous failure: use `Math.min(max,Math.max(min,value))`
+and add `clamp(15,0,10) === 10`. Never repeat the omission after feedback.
+Tests reruns that file; QA approves both bounds using the evidence; Review checks clarity.
 
 ### Task sample-compose: Use both integrated results
 
 - Depends on: sample-add, sample-clamp
 
-Use only Node.js built-ins (node:test, node:assert/strict), no dependencies or installs. Inspect only the named files, run only your assigned stage and return a brief result with real evidence. No extra features or documentation.
-
-Implementation creates score.mjs importing add and clamp, exporting score(a,b)=clamp(add(a,b),0,10). Create score.test.mjs with exactly three integration cases: score(2,3)=5, score(8,7)=10, score(-8,2)=0. Tests runs `node --test add.test.mjs clamp.test.mjs score.test.mjs`. QA verifies composition and evidence; Review checks clarity. No CLI or input validation. This task must consume the real files integrated from both independent tasks.
+Implementation: create score.mjs importing add and clamp and exporting
+`score(a,b) => clamp(add(a,b),0,10)`. Create score.test.mjs with node:assert/strict
+checking `score(8,7) === 10`. Use the real dependency files.
+Tests: run `node score.test.mjs` once. QA: verify composition and test evidence.
+Review: check clarity. No CLI, argument parsing or additional tests.
 
 ### Task sample-confirmation: Simulate waiting for approval
 
 - Depends on: none
 
-This task demonstrates On hold and requires one real user interaction. It simulates an external PR approval; do not create a PR, perform a login, call a network service, or poll for approval. Inspect only sample-confirmed.txt, if it exists.
-
-On the first Implementation attempt, return exactly `{"status":"on_hold","question":"Simulated approval: type continue to resume this task.","summary":"Waiting for your simulated PR approval. No real PR or login is required; the other independent tasks can continue."}`. Do not create any files or return completed before the user answers. Resume context contains the earlier question and answer. If the user has not explicitly answered `continue` (case-insensitive), remain on hold and explain that this confirmation is required. After that answer, create sample-confirmed.txt containing `confirmed` followed by a newline and return completed, describing the real confirmation.
-
-Tests runs `node --input-type=module -e 'import { readFileSync } from "node:fs"; import assert from "node:assert/strict"; assert.equal(readFileSync("sample-confirmed.txt", "utf8"), "confirmed\n");'`. QA verifies that the recorded answer is `continue` and the confirmation file exists. Review checks only this acceptance criterion. Do not ask again after the confirmation was recorded, including in later stages or repairs. No other task depends on this demonstration.
+First Implementation: return `{"status":"on_hold","question":"Simulated approval: type continue to resume this task.","summary":"Waiting for your simulated PR approval. No real PR or login is required."}` without writing files.
+Stay on hold until the recorded user answer is `continue` (case-insensitive).
+Then write sample-confirmed.txt containing `confirmed` plus a newline.
+Tests: run `node --input-type=module -e 'import { readFileSync } from "node:fs"; import assert from "node:assert/strict"; assert.equal(readFileSync("sample-confirmed.txt", "utf8"), "confirmed\n");'`.
+QA/Review: verify the recorded answer and file; do not ask again.
+No real PR, login, network calls or polling. Inspect only this task's file.

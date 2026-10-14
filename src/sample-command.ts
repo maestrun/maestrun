@@ -18,7 +18,7 @@ export function registerSample(program: Command): void {
       .command(mode)
       .description(
         mode === "advanced"
-          ? "Parallel tasks, QA repair and an intentional integration conflict"
+          ? "Parallel tasks, one QA repair, on hold, independent failure and integration"
           : "Original sequential QA repair demo",
       )
       .option("--background", "Run the sample in the background")

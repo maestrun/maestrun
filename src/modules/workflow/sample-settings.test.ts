@@ -52,6 +52,28 @@ test("sample can choose models before project initialization", async ({ project 
   expect((await loadConfig(project.cwd)).config).toBeUndefined();
 });
 
+test.for([
+  { efforts: ["low", "high"], preferred: "low" },
+  { efforts: ["high"], preferred: "" },
+] as const)("sample suggests only supported low effort: $preferred", async (model, { project }) => {
+  await setupRun(project.cwd, {
+    ...RUN_CONFIG,
+    stages: RUN_CONFIG.stages.map((stage) => ({ ...stage, effort: "high" })),
+  });
+  const script = scriptedUi(["codex", "code-test", ""]);
+  const context = wizardContext(project.cwd, script.ui);
+  await selectSampleAssignment(context, {
+    ...context.services,
+    models: async () => [
+      { id: "code-test", name: "Test", isDefault: true, efforts: model.efforts },
+    ],
+  });
+  expect(script.calls.find((call) => call.message === "Codex effort")?.initial).toBe(
+    model.preferred,
+  );
+  expect((await loadConfig(project.cwd)).config?.stages[1]?.effort).toBe("high");
+});
+
 test("Back from the first sample setting cancels the sample", async ({ project }) => {
   const context = wizardContext(project.cwd, scriptedUi([new BackError()]).ui);
   await expect(selectSampleAssignment(context, context.services)).rejects.toThrow("Cancelled");

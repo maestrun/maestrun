@@ -350,7 +350,7 @@ maestrun sample advanced --background
 | [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation                       | Sequential implementation/tests, dependency and regression cases                         |
 | [Advanced](../examples/advanced/plan.md) | Missing input; approval on hold; add + clamp → compose | On hold confirmation, independent failure, parallel worktrees, QA repair and integration |
 
-Tasks use only Node.js built-ins. No installs or servers. Simple needs four model stages; advanced normally needs twenty-six: fifteen for add, clamp, and compose (including one intentional QA repair), plus six attempts at the missing-input task (the initial attempt and five repairs), and five calls for the confirmation task (the initial hold and four stages after answering). QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
+Tasks use tiny functions and direct Node.js assertions, with no installs, servers or CLI to build. Simple needs four model stages; advanced normally needs twenty-two: fifteen for add, clamp, and compose (including one intentional QA repair), plus two attempts at the missing-input task (the initial attempt and one repair), and five calls for the confirmation task (the initial hold and four stages after answering). QA and Review reuse test evidence rather than rerunning tests. QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
 
 The advanced sample starts `sample-missing-input` alongside `sample-add`. The missing-input task checks an intentionally absent `sample-required-input.json`, reports the actual ENOENT error, and exhausts its repair budget. It has no dependants. The confirmation task simulates waiting for PR approval and asks you to type `continue` by pressing **Enter** on the selected task in **All**. Its orange border and message remain until answered; no real PR or login is involved. The remaining tasks continue through Tests, QA, Review, and Integration; compose depends only on add and clamp. Expected final task statuses:
 
@@ -364,9 +364,9 @@ sample-confirmation   completed  User typed continue; simulated approval recorde
 
 The run intentionally ends with **4 completed tasks and 1 failed task** after the confirmation. In a terminal, the failed task stays visible and the view remains open to inspect the rest of the workflow: select a task and press **Enter** for step results or **L** for recorded logs. Noninteractive execution waits for the confirmation too; reconnect from a terminal in the sample directory to answer. It exits with **code 1 after all runnable tasks finish**. Repeating the run retries the missing-input task; it will fail again while its input remains absent. No manual recovery is needed for the other three tasks to finish.
 
-Each invocation creates a fresh `.maestrun/samples/run-*` directory and prints its path. Advanced requires Git 2.38+ and automatically creates a separate repository there. In a terminal, choose executor/model/effort; otherwise saved assignments are required. Both use a five-cycle repair limit and exclude plugins, custom steps and target overrides.
+Each invocation creates a fresh `.maestrun/samples/run-*` directory and prints its path. Advanced requires Git 2.38+ and automatically creates a separate repository there. In a terminal, choose executor/model/effort; low effort is suggested for the initially selected model when supported, and you can override it. Otherwise saved assignments (including effort) are required and preserved. Simple disables automatic repairs; advanced and the sequential QA sample allow one repair per task, regardless of the main project's repair budget. All samples exclude plugins, custom steps and target overrides.
 
-To reconnect or resume, enter the printed directory and run `maestrun`. The main project's configuration, Git history and progress stay unchanged. `maestrun sample run` remains available for the original sequential QA demonstration.
+To reconnect or resume, enter the printed directory and run `maestrun`. The main project's configuration, Git history and progress stay unchanged. `maestrun sample run` demonstrates sequential QA repair with three small module tasks and fifteen model stages. These are real executor runs and still consume tokens; the shorter plans and limited repairs reduce work, but do not impose a token or price cap.
 
 ### Sample screenshots
 
@@ -388,7 +388,7 @@ The add and clamp tasks start in parallel, while the composition task waits for 
 
 ![The advanced sample running add and clamp in parallel, with the composition task waiting.](images/sample-advanced-running.png)
 
-QA detects the deliberately missing upper bound in `clamp`. The yellow return arrow shows **QA → Implementation**: QA is marked **Refactor · needs changes**, Implementation is **In progress**, and Tests waits to run again. The footer shows **Automatic repair (1/5)** and the reason for the rework.
+QA detects the deliberately missing upper bound in `clamp`. The yellow return arrow shows **QA → Implementation**: QA is marked **Refactor · needs changes**, Implementation is **In progress**, and Tests waits to run again. The older capture shows **Automatic repair (1/5)** and the reason for the rework; current samples use **1/1**.
 
 ![The clamp task returning from QA to Implementation, with a yellow return arrow and the automatic repair notice.](images/sample-advanced-rework.png)
 

@@ -84,9 +84,11 @@ async function confirmApproval(cli: ReturnType<typeof sessionCli>, cwd: string):
   cli.send("continue\r");
   await vi.waitFor(() => {
     const after = cli.output().slice(offset);
-    expect(after).toContain("Answer saved.");
-    expect(after).toContain("Input 0");
-    expect(after).not.toContain("On hold · awaiting your input");
-    expect(after).not.toContain("No pending input.");
+    // Earlier frames may precede the worker acknowledging the saved answer.
+    const current = after.slice(after.lastIndexOf("\x1b[H"));
+    expect(current).toContain("Answer saved.");
+    expect(current).toContain("Input 0");
+    expect(current).not.toContain("On hold · awaiting your input");
+    expect(current).not.toContain("No pending input.");
   });
 }

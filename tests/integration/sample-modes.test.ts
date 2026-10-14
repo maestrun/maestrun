@@ -36,6 +36,7 @@ test("simple command runs only implementation and tests for two dependent tasks"
     "implementation",
     "testing",
   ]);
+  expect(config?.execution?.maxRepairs).toBe(0);
   expect((await loadTasks(directory, "plan.md"))[1]?.dependsOn).toEqual(["simple-greeting"]);
   await expect(stat(join(directory, ".git"))).rejects.toThrow();
   const calls = (await readFile(project.log, "utf8")).trim().split("\n");
@@ -57,10 +58,10 @@ test("advanced command reports an independent failure after completing the remai
   expect(cli.output()).toContain("Failed sample-missing-input");
   expect(cli.output()).toContain("sample-required-input.json");
   const { config } = await loadConfig(directory);
-  expect(config?.execution).toMatchObject({ mode: "parallel", concurrency: 2, maxRepairs: 5 });
+  expect(config?.execution).toMatchObject({ mode: "parallel", concurrency: 2, maxRepairs: 1 });
   expect(await gitOutput(directory, ["rev-parse", "--show-toplevel"])).toBe(directory);
   const report = await savedReport(directory);
-  expect(report.tasks[0]?.reruns).toHaveLength(5);
+  expect(report.tasks[0]?.reruns).toHaveLength(1);
   expect(report.tasks[2]?.reruns).toHaveLength(1);
   expect(report.tasks.map((task) => task.status)).toEqual(ADVANCED_STATUSES);
   await expect(stat(join(project.cwd, ".git"))).rejects.toThrow();
