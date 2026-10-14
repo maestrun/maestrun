@@ -5,6 +5,8 @@ import { atomicWrite, snapshotFile } from "../../shared/atomic.js";
 import { UserError } from "../../shared/errors.js";
 import type { RunReport, TaskState } from "../../contracts/run.js";
 import type { Ui } from "../../shared/ui.types.js";
+import { pendingInput } from "./task-input.js";
+import { cleanText } from "../../shared/terminal-text.js";
 import { tokenUsageLabel } from "../../shared/token-usage.js";
 
 export async function lockRun(cwd: string): Promise<() => Promise<void>> {
@@ -25,7 +27,7 @@ export async function lockRun(cwd: string): Promise<() => Promise<void>> {
 }
 
 export function stateLine(state: TaskState): string {
-  return `${state.id} (${state.title}) | ${state.status} | ${state.step ?? "—"} | ${state.executor ?? "—"}/${state.model ?? "—"} · effort: ${state.effort ?? "default"} | ${state.completedSteps}/${state.totalSteps} steps${state.error ? ` | ${state.error}` : ""} | ${tokenUsageLabel(state)}`;
+  return `${state.id} (${state.title}) | ${state.status} | ${state.step ?? "—"} | ${state.executor ?? "—"}/${state.model ?? "—"} · effort: ${state.effort ?? "default"} | ${state.completedSteps}/${state.totalSteps} steps${state.error ? ` | ${state.error}` : ""}${pendingInput(state) ? ` | Awaiting input: ${cleanText(pendingInput(state)?.question ?? "")} · Open maestrun and press H, then I to answer.` : ""} | ${tokenUsageLabel(state)}`;
 }
 
 export function reporter(

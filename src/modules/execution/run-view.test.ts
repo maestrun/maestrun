@@ -101,3 +101,28 @@ test("finished views allow details and flow navigation until Escape closes the l
     view?.close();
   }
 });
+
+test.each([0, 5])("Enter answers the selected held task in filter %i", (filter) => {
+  vi.stubEnv("TERM", "xterm");
+  const terminal = viewTerminal();
+  const report = viewReport();
+  const held = report.tasks[1];
+  if (!held) throw new Error("Missing task");
+  held.status = "on_hold";
+  const selection = { filter, selected: held.id, details: false, scroll: 0 };
+  const onInstructions = vi.fn();
+  const view = createRunView(report, "/project", { ...terminal, selection, onInstructions });
+  try {
+    terminal.input.emit("keypress", "\r", { name: "return" });
+    expect(onInstructions).toHaveBeenCalledExactlyOnceWith(held);
+    expect(selection.details).toBe(false);
+    expect(terminal.frames.at(-1)).toContain("Enter full question + answer");
+    held.status = "completed";
+    selection.filter = 0;
+    terminal.input.emit("keypress", "\r", { name: "return" });
+    expect(onInstructions).toHaveBeenCalledOnce();
+    expect(selection.details).toBe(true);
+  } finally {
+    view?.close();
+  }
+});

@@ -48,7 +48,7 @@ export async function runIsolatedTasks(context: RunContext, tasks: readonly Task
         await workspaceFailure(context, state, error);
       }
     }
-    if (state.worktree && !state.worktree.integrated) {
+    if (state.worktree && !state.worktree.integrated && state.status !== "on_hold") {
       const retained = `Worktree preserved: ${worktreePath(context.cwd, state.worktree)}`;
       state.error = `${state.error ?? "Task did not integrate."} ${retained}`;
       context.ui.log(retained);

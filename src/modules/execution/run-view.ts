@@ -130,9 +130,11 @@ function instructionKey(
   context: { report: RunReport; state: ViewState },
   terminal: Terminal,
 ): boolean {
-  if (key.name !== "i" || !terminal.onInstructions) return false;
+  if (!terminal.onInstructions) return false;
   const tasks = visibleTasks(context.report, context.state.filter);
   const task = tasks[selectedIndex(tasks, context.state)];
+  const answer = key.name === "return" && task?.status === "on_hold" && !context.state.details;
+  if (key.name !== "i" && !answer) return false;
   if (task) terminal.onInstructions(task);
   return true;
 }

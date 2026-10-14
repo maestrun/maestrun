@@ -7,6 +7,7 @@ const STATUS = {
   completed: "Done",
   failed: "Failed",
   refactor: "Needs changes",
+  on_hold: "On hold · awaiting input",
   cancelled: "Cancelled",
 };
 

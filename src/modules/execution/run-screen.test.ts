@@ -45,6 +45,7 @@ test("filters tasks, wraps tabs, opens details and returns to the list", () => {
   navigateView(state, report, { name: "down" });
   expect(state.selected).toBe("b");
   navigateView(state, report, { name: "left" });
+  navigateView(state, report, { name: "left" });
   expect(visibleTasks(report, state.filter).map((task) => task.id)).toEqual(["d"]);
   navigateView(state, report, { name: "return" });
   expect(renderRunScreen(report, state, screen)).toContain("Preview credentials are missing.");
@@ -53,9 +54,10 @@ test("filters tasks, wraps tabs, opens details and returns to the list", () => {
   navigateView(state, report, { name: "escape" });
   expect(state.details).toBe(false);
   navigateView(state, report, { name: "tab" });
+  navigateView(state, report, { name: "tab" });
   expect(state.filter).toBe(0);
   navigateView(state, report, { name: "tab", shift: true });
-  expect(state.filter).toBe(4);
+  expect(state.filter).toBe(5);
 });
 
 test("handles empty filters and clamps detail scrolling to the content", () => {

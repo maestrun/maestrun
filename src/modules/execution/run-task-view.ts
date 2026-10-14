@@ -3,12 +3,12 @@ import type { LayoutColumn } from "../../contracts/layout.js";
 import { row } from "./run-columns.js";
 import { isStage, stageLabel } from "../../contracts/workflow.js";
 import type { RunReport, TaskState } from "../../contracts/run.js";
-import { selectedIndex, visibleTasks } from "./run-view-state.js";
+import { FILTERS, selectedIndex, visibleTasks } from "./run-view-state.js";
 import type { ViewState } from "./run-view-state.js";
 import { cell, wrapText } from "../../shared/terminal-text.js";
 import { tokenUsageLabel, tokenUsageColumn } from "../../shared/token-usage.js";
 import { taskStepOutput } from "./task-step-output.js";
-
+import { heldTaskLines, taskInputDetails } from "./task-input-view.js";
 const STATUS = {
   pending: "○ Waiting",
   running: "● Working",
@@ -17,12 +17,12 @@ const STATUS = {
   blocked: "! Blocked",
   cancelled: "− Cancelled",
   refactor: "↻ Needs changes",
+  on_hold: "Ⅱ On hold",
 };
 export function stage(task: TaskState): string {
   if (task.status === "completed") return "-";
   return isStage(task.step) ? stageLabel(task.step) : (task.step ?? "—");
 }
-
 function taskRow(
   task: TaskState,
   selected: boolean,
@@ -48,7 +48,6 @@ function taskRow(
   if (task.status === "running") return chalk.cyan(text);
   return task.status === "completed" ? chalk.green(text) : chalk.dim(text);
 }
-
 function taskList(
   report: RunReport,
   state: ViewState,
@@ -63,16 +62,23 @@ function taskList(
     height += blocks[--start]?.length ?? 0;
   }
   const lines = blocks.slice(start).flat();
-  if (!tasks.length) lines.push(chalk.dim("  No tasks in this view."));
+  if (!tasks.length)
+    lines.push(
+      chalk.dim(
+        state.filter === FILTERS.indexOf("Input")
+          ? "  No pending input."
+          : "  No tasks in this view.",
+      ),
+    );
   return lines.slice(0, size.height);
 }
-
 function taskLines(
   task: TaskState,
   selected: boolean,
   size: { width: number; columns?: readonly LayoutColumn[] },
 ): string[] {
   const { width } = size;
+  if (task.status === "on_hold") return heldTaskLines(task, selected, width);
   const assignment = taskAssignment(task);
   return [
     taskRow(task, selected, size),
@@ -91,7 +97,6 @@ function taskLines(
       : []),
   ];
 }
-
 function details(task: TaskState | undefined, width: number, logs: boolean): string[] {
   if (!task) return ["No task selected."];
   return [
@@ -102,6 +107,7 @@ function details(task: TaskState | undefined, width: number, logs: boolean): str
     `Model: ${task.model ?? "—"} · Effort: ${task.effort ?? "default"}`,
     "",
     ...(task.error ? [`Error: ${task.error}`] : []),
+    ...taskInputDetails(task),
     ...(task.reruns?.flatMap((rerun, index) => [
       "",
       `Rerun ${index + 1}: ${isStage(rerun.fromStep) ? stageLabel(rerun.fromStep) : rerun.fromStep} → Implementation`,
@@ -115,7 +121,6 @@ function details(task: TaskState | undefined, width: number, logs: boolean): str
     text.split(/\r?\n/u).flatMap((line) => (line ? wrapText(line, width) : [""])),
   );
 }
-
 export function taskBody(
   report: RunReport,
   state: ViewState,
@@ -136,7 +141,6 @@ export function taskBody(
   }
   return lines.slice(state.scroll, state.scroll + size.height);
 }
-
 function taskAssignment(task: TaskState): { model: string; effort: string } {
   const pending = task.status === "pending" ? task.steps?.[0] : undefined;
   const effort = task.effort ?? pending?.effort ?? "default";

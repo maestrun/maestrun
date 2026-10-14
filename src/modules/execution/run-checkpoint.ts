@@ -10,14 +10,23 @@ import { initialTaskState } from "./scheduler.js";
 import { uniqueWorktrees, validWorktree } from "./task-worktree.js";
 import { validReruns } from "./task-reruns.js";
 import { validUsageRecord } from "../../shared/token-usage.js";
+import { validInputRequests, pendingInput } from "./task-input.js";
+const TASK_STATUSES = [
+  "pending",
+  "running",
+  "completed",
+  "failed",
+  "blocked",
+  "cancelled",
+  "refactor",
+  "on_hold",
+];
 function savedTask(value: unknown): TaskState {
   if (
     !isRecord(value) ||
     typeof value.id !== "string" ||
     typeof value.title !== "string" ||
-    !["pending", "running", "completed", "failed", "blocked", "cancelled", "refactor"].includes(
-      String(value.status),
-    ) ||
+    !TASK_STATUSES.includes(String(value.status)) ||
     !Number.isInteger(value.completedSteps) ||
     !Number.isInteger(value.totalSteps) ||
     typeof value.completedSteps !== "number" ||
@@ -30,7 +39,21 @@ function savedTask(value: unknown): TaskState {
     (value.integration !== undefined && !["pending", "running"].includes(String(value.integration)))
   )
     invalidCheckpoint("invalid task record");
+  validateTaskDetails(value);
+  return value as TaskState;
+}
+function validateTaskDetails(value: Record<string, unknown>): void {
   validatePlannedStages(value);
+  if (
+    !validInputRequests(value.inputRequests) ||
+    (value.status === "on_hold" && !pendingInput(value as TaskState)) ||
+    (value.repairAttempts !== undefined &&
+      (typeof value.repairAttempts !== "number" ||
+        !Number.isInteger(value.repairAttempts) ||
+        value.repairAttempts < 0 ||
+        value.repairAttempts > 100))
+  )
+    invalidCheckpoint("invalid pending input");
   if (value.steps !== undefined) validateSteps(value);
   if (!validUsageRecord(value)) invalidCheckpoint("invalid token usage");
   if (!validWorktree(value.worktree)) invalidCheckpoint("invalid task worktree");
@@ -38,7 +61,6 @@ function savedTask(value: unknown): TaskState {
     invalidCheckpoint("invalid rerun history");
   for (const step of (value as TaskState).steps ?? [])
     if (!step.tokenUsage && step.status !== "pending") step.tokenUsageIncomplete = true;
-  return value as TaskState;
 }
 function validatePlannedStages(value: Record<string, unknown>): void {
   if (
@@ -51,7 +73,6 @@ function validatePlannedStages(value: Record<string, unknown>): void {
   )
     invalidCheckpoint("invalid replanned stages");
 }
-
 function validateSteps(value: Record<string, unknown>): void {
   if (!Array.isArray(value.steps) || value.steps.length !== value.totalSteps)
     invalidCheckpoint(`invalid step history for ${String(value.id)}`);
@@ -63,7 +84,7 @@ function validateSteps(value: Record<string, unknown>): void {
       typeof step.title !== "string" ||
       !validUsageRecord(step) ||
       ids.has(step.id) ||
-      !["pending", "running", "completed", "failed", "refactor", "cancelled"].includes(
+      !["pending", "running", "completed", "failed", "refactor", "cancelled", "on_hold"].includes(
         String(step.status),
       ) ||
       (step.status === "completed") !== index < Number(value.completedSteps)
@@ -102,7 +123,6 @@ export async function resumeReport(
   const previous = await readCheckpoint(cwd);
   return buildReport(config, tasks, { previous });
 }
-
 export function buildReport(
   config: Config,
   tasks: readonly Task[],

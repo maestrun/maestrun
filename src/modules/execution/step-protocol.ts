@@ -2,6 +2,7 @@ import { DEFAULT_MAX_REPAIRS, isRecord, stageLabel } from "../../contracts/workf
 import { UserError, RefactorError, StepFailedError } from "../../shared/errors.js";
 import { codexArguments, copilotArguments, grokArguments } from "../executors/index.js";
 import { readRequirements } from "../../shared/requirements.js";
+import { inputPrompt, requireTaskInput } from "./task-input.js";
 import { evidencePrompt } from "./step-evidence.js";
 import type { StepInput } from "../../contracts/run.js";
 
@@ -75,7 +76,8 @@ export async function stepPrompt(input: StepInput): Promise<string> {
     verificationPrompt(input.stage),
     "For local HTTP or browser checks, start the test server and run its clients in the same shell command so they share the sandbox network namespace. Wait for readiness and stop the server on exit, including failures. Do not assume localhost servers from separate shell commands are reachable.",
     'Return ONLY JSON: {"status":"completed"|"failed"|"refactor","summary":"result and verification evidence"}. Use refactor when the step needs changes before it can pass.',
-    "Use failed if blocked, checks fail, or the requested stage is incomplete. Never claim unrun checks passed.",
+    ...inputPrompt(input),
+    "Use failed for execution blockers, failed checks, or incomplete work unrelated to a user decision. Never claim unrun checks passed.",
     `The orchestrator allows up to ${input.maxRepairs ?? DEFAULT_MAX_REPAIRS} automatic repair cycles per task in this run after a failed or refactor result, returning to Implementation when configured and rerunning subsequent stages. Report concrete findings; do not run other stages yourself.`,
     ...(input.projectCwd
       ? [
@@ -96,6 +98,7 @@ export async function stepPrompt(input: StepInput): Promise<string> {
 
 export function stepResult(text: string): string {
   const value = parseResult(text);
+  requireTaskInput(value);
   if (isRecord(value) && value.status === "failed" && typeof value.summary === "string")
     throw new StepFailedError(
       `Step failed: ${value.summary.replace(/[\p{Cc}]/gu, " ").slice(0, 2000)}`,

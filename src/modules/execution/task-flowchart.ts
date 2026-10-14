@@ -9,6 +9,7 @@ import { cell, cleanText } from "../../shared/terminal-text.js";
 import { tokenUsageLabel } from "../../shared/token-usage.js";
 
 import { taskDisplaySteps } from "./task-display-steps.js";
+import { holdColor } from "./task-input-view.js";
 
 const STEP_HEIGHT = 7;
 
@@ -19,6 +20,7 @@ const COLORS = {
   failed: chalk.red,
   refactor: chalk.yellow,
   cancelled: chalk.gray,
+  on_hold: holdColor,
 };
 const LABELS = {
   pending: "Waiting",
@@ -27,6 +29,7 @@ const LABELS = {
   failed: "Error",
   refactor: "Refactor · needs changes",
   cancelled: "Cancelled",
+  on_hold: "On hold · awaiting input",
 };
 
 export function taskFlowchart(

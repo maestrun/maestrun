@@ -125,6 +125,8 @@ See [configuration and global defaults](docs/advanced.md#workflow-and-configurat
 
 During an interactive run, **Enter** opens task details, **F** shows the stage flowchart, and **I** lets you send instructions to a running model task. **Ctrl+C** offers background execution or cancellation.
 
+When a model needs a decision, a layout choice, or an external action such as PR approval or login, its task goes **On hold** with an orange border, the reason for waiting, and the model's question. Held tasks appear in **All**. Press **Enter** on the selected task to show the full question and context with the answer field directly below. **H** optionally filters to pending inputs, **↑ / ↓** selects another task, and **I** also opens the answer field. **Esc** leaves the question pending. Saving an answer closes its box and selects the next pending task in the same tab. Answered tasks resume their current stage with the saved files and answers; completed stages stay complete. Independent tasks continue, and waiting uses no repair attempts or model execution time. Questions and answers survive reconnection: open `maestrun` to answer a background run, or use `maestrun run` after a stopped run.
+
 Model-reported failures can trigger up to **5 automatic repair cycles per task per run** by default. You can change this limit or disable repairs. After a failure, choose **View evidence**, **Adjust configuration**, or **Resume**. Executor errors and timeouts stop the affected task immediately.
 
 Keep **`.maestrun/run.json`**: it stores completion checkpoints. Parallel runs also need their retained worktrees for recovery. See [execution and recovery](docs/advanced.md#execution-and-recovery) and [parallel worktrees](docs/advanced.md#parallel-worktrees) for requirements and integration behavior.
@@ -133,12 +135,12 @@ Keep **`.maestrun/run.json`**: it stores completion checkpoints. Parallel runs a
 
 ```sh
 maestrun sample          # 2 sequential tasks: implementation and tests
-maestrun sample advanced # 4 tasks: independent failure, QA repair, and integration
+maestrun sample advanced # 5 tasks: on hold, independent failure, QA repair, and integration
 ```
 
 Each run creates a separate sample folder and uses your selected model. Both samples use Node.js built-ins, with no dependency installation. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
 
-Advanced intentionally leaves one independent task failed while the other three complete. Its final run status is failed; noninteractive execution exits with code 1 after the remaining workflow finishes.
+Advanced includes a simulated PR approval: press **Enter** on the held task in **All** and type `continue`. No real PR or login is needed. One independent task intentionally fails while the other four complete. Noninteractive runs wait for the same confirmation; reconnect in a terminal to answer. The final run status is failed (exit code 1) after the remaining workflow finishes.
 
 The simple sample in progress, with task status and the Implementation → Tests flow:
 

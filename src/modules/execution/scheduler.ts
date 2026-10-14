@@ -5,6 +5,8 @@ import { taskStages } from "./tasks.js";
 import type { Task } from "../../contracts/tasks.js";
 import { runIsolatedTasks } from "./parallel-tasks.js";
 import { runTask } from "./task-runner.js";
+import { setTimeout } from "node:timers/promises";
+import { receiveTaskAnswers } from "./task-input.repository.js";
 
 async function blockRemaining(context: RunContext, pending: readonly Task[]): Promise<void> {
   for (const task of pending) {
@@ -26,23 +28,19 @@ export async function schedule(context: RunContext, tasks: readonly Task[]): Pro
   const limit =
     context.config.execution?.mode === "parallel" ? context.config.execution.concurrency : 1;
   while (pending.length && !context.signal.aborted) {
-    const done = new Set(
-      context.report.tasks.filter((task) => task.status === "completed").map((task) => task.id),
+    await receiveTaskAnswers(context);
+    const ready = readyTasks(context, pending).slice(0, limit);
+    if (!ready.length) {
+      if (!context.report.tasks.some((task) => task.status === "on_hold")) break;
+      await setTimeout(100);
+      continue;
+    }
+    await runReady(context, ready);
+    pending = pending.filter(
+      (task) =>
+        !ready.includes(task) ||
+        context.report.tasks.find((state) => state.id === task.id)?.status === "on_hold",
     );
-    const ready = pending
-      .filter((task) => task.dependsOn.every((id) => done.has(id)))
-      .slice(0, limit);
-    if (!ready.length) break;
-    const isolated =
-      context.config.execution?.mode === "parallel" ||
-      ready.some((task) =>
-        context.report.tasks.some(
-          (state) => state.id === task.id && state.worktree && !state.worktree.integrated,
-        ),
-      );
-    if (isolated) await runIsolatedTasks(context, ready);
-    else for (const task of ready) await runTask(context, task);
-    pending = pending.filter((task) => !ready.includes(task));
   }
   await blockRemaining(context, pending);
 }
@@ -63,4 +61,27 @@ export function initialTaskState(config: RunContext["config"], task: Task): Task
       status: "pending",
     })),
   };
+}
+
+function readyTasks(context: RunContext, pending: readonly Task[]): Task[] {
+  const done = new Set(
+    context.report.tasks.filter((task) => task.status === "completed").map((task) => task.id),
+  );
+  return pending.filter(
+    (task) =>
+      task.dependsOn.every((id) => done.has(id)) &&
+      context.report.tasks.find((state) => state.id === task.id)?.status !== "on_hold",
+  );
+}
+
+async function runReady(context: RunContext, ready: readonly Task[]): Promise<void> {
+  const isolated =
+    context.config.execution?.mode === "parallel" ||
+    ready.some((task) =>
+      context.report.tasks.some(
+        (state) => state.id === task.id && state.worktree && !state.worktree.integrated,
+      ),
+    );
+  if (isolated) await runIsolatedTasks(context, ready);
+  else for (const task of ready) await runTask(context, task);
 }

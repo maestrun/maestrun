@@ -10,7 +10,7 @@ test("the advanced failure has no dependencies or dependants", async ({ project 
   await setupRun(project.cwd);
   const cwd = await prepareSample(project.cwd, undefined, "advanced");
   const tasks = await loadTasks(cwd, "plan.md");
-  expect(tasks).toHaveLength(4);
+  expect(tasks).toHaveLength(5);
   expect(tasks[0]).toMatchObject({ id: "sample-missing-input", dependsOn: [] });
   expect(tasks.every((task) => !task.dependsOn.includes("sample-missing-input"))).toBe(true);
   expect(tasks[3]).toMatchObject({
@@ -37,10 +37,12 @@ test(
       const running = await savedReport(directory);
       expect(running.tasks[0]?.status).toBe("failed");
       expect(running.finishedAt).toBeUndefined();
+      await confirmApproval(cli, directory);
       await inspectFinished(cli, directory);
     } finally {
-      cli.kill();
       if (directory) await stopSession(directory);
+      cli.kill();
+      await cli.exited;
     }
   },
 );
@@ -55,17 +57,36 @@ async function chooseModel(cli: ReturnType<typeof sessionCli>): Promise<void> {
 }
 
 async function inspectFinished(cli: ReturnType<typeof sessionCli>, cwd: string): Promise<void> {
-  await cli.wait("3/4 tasks");
+  await cli.wait("4/5 tasks");
   await cli.wait("Esc close");
   const report = await savedReport(cwd);
   expect(
     report.tasks.slice(1).every((task) => task.status === "completed" && task.worktree?.integrated),
   ).toBe(true);
-  cli.send("\r");
+  cli.send("\x1b[A".repeat(4) + "\r");
   await cli.wait("ENOENT: sample-required-input.json is missing");
   cli.send("\r\x1b[B\x1b[B\x1b[B\r");
   await cli.wait("sample-compose — Use both integrated results");
   await cli.wait("Tests and acceptance criteria passed");
   cli.send("\r\x1b");
   expect(await cli.exited).toBe(1);
+}
+
+async function confirmApproval(cli: ReturnType<typeof sessionCli>, cwd: string): Promise<void> {
+  await cli.wait("1 awaiting input");
+  const task = (await savedReport(cwd)).tasks.find((entry) => entry.id === "sample-confirmation");
+  expect(task?.status).toBe("on_hold");
+  expect(task?.inputRequests?.[0]?.summary).toContain("simulated PR approval");
+  cli.send("\r");
+  await cli.wait("Your answer");
+  await cli.wait("Simulated approval: type continue");
+  const offset = cli.output().length;
+  cli.send("continue\r");
+  await vi.waitFor(() => {
+    const after = cli.output().slice(offset);
+    expect(after).toContain("Answer saved.");
+    expect(after).toContain("Input 0");
+    expect(after).not.toContain("On hold · awaiting your input");
+    expect(after).not.toContain("No pending input.");
+  });
 }
