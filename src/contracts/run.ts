@@ -57,6 +57,7 @@ export type TaskState = {
   worktree?: TaskWorktree;
   id: string;
   definition?: string;
+  plannedStages?: string[];
   title: string;
   status: "pending" | "running" | "completed" | "failed" | "blocked" | "cancelled" | "refactor";
   steps?: TaskStep[];

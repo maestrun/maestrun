@@ -46,3 +46,6 @@ export * from "./worktree-settings.js";
 export * from "./worktree-conflict.js";
 export * from "./sample-project.js";
 export * from "./task-display-steps.js";
+export * from "./checkpoint-error.js";
+export * from "./replan-checkpoint.js";
+export * from "./restore-task.js";

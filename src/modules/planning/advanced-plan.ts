@@ -59,7 +59,7 @@ export async function selectPlanFolder(context: CommandInput, initial = "tasks")
   }
 }
 
-function documents(content: string): readonly string[] {
+export function advancedDocuments(content: string): readonly string[] {
   const parts = content
     .trim()
     .replace(/^```(?:markdown|md)?\s*\n([\s\S]*)\n```$/u, "$1")
@@ -84,7 +84,7 @@ export async function saveAdvancedPlan(
   draft: Draft,
   content: string,
 ): Promise<string> {
-  const sections = documents(content);
+  const sections = advancedDocuments(content);
   parseTaskDocument(sections[2] ?? "");
   const folder = draft.planFolder ?? "tasks";
   await requireNewFolder(context.cwd, folder);
