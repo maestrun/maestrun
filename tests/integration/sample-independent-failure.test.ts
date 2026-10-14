@@ -63,7 +63,7 @@ async function inspectFinished(cli: ReturnType<typeof sessionCli>, cwd: string):
   expect(
     report.tasks.slice(1).every((task) => task.status === "completed" && task.worktree?.integrated),
   ).toBe(true);
-  cli.send("\t" + "\x1b[A".repeat(4) + "\r");
+  cli.send("\x1b[A".repeat(4) + "\r");
   await cli.wait("ENOENT: sample-required-input.json is missing");
   cli.send("\r\x1b[B\x1b[B\x1b[B\r");
   await cli.wait("sample-compose — Use both integrated results");
@@ -80,5 +80,13 @@ async function confirmApproval(cli: ReturnType<typeof sessionCli>, cwd: string):
   cli.send("hi");
   await cli.wait("Your answer");
   await cli.wait("Simulated approval: type continue");
+  const offset = cli.output().length;
   cli.send("continue\r");
+  await vi.waitFor(() => {
+    const after = cli.output().slice(offset);
+    expect(after).toContain("Answer saved.");
+    expect(after).toContain("Input 0");
+    expect(after).not.toContain("On hold · awaiting your input");
+    expect(after).not.toContain("No pending input.");
+  });
 }

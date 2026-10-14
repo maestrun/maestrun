@@ -4,6 +4,7 @@ import { stateLine } from "./run-report.repository.js";
 import { sessionReport } from "./run-session.repository.js";
 import { readConversation } from "./task-conversation.repository.js";
 import { taskInstructions } from "./task-instructions.js";
+import { reflectTaskAnswers } from "./task-input.repository.js";
 import { FILTERS, selectedIndex, visibleTasks } from "./run-view-state.js";
 
 import type { SessionView } from "./execution.types.js";
@@ -37,6 +38,7 @@ export function closeSessionView(state: SessionView): void {
 export async function refreshSessionView(state: SessionView): Promise<void> {
   const report = await sessionReport(state.cwd, state.session);
   if (!report) return;
+  await reflectTaskAnswers(state.cwd, report, state.report);
   focusPendingInput(state, report);
   await Promise.all(
     report.tasks.map(async (task) => {

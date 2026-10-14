@@ -6,7 +6,7 @@ import { withBack } from "../../shared/navigation.js";
 import { readConversation, sendTaskMessage } from "./task-conversation.repository.js";
 import type { SessionView } from "./execution.types.js";
 import { pendingInput } from "./task-input.js";
-import { answerTaskInput } from "./task-input.repository.js";
+import { answerTaskInput, reflectTaskAnswers } from "./task-input.repository.js";
 import { cleanText } from "../../shared/terminal-text.js";
 import { FILTERS } from "./run-view-state.js";
 
@@ -67,20 +67,27 @@ async function answerHeldTask(state: SessionView, task: TaskState): Promise<void
           validate: (value) =>
             (Boolean(value.trim()) && value.length <= 32000) || "Enter 1–32000 characters.",
         },
-        { signal },
+        { signal, clearPromptOnDone: true },
       ),
     state.prompt?.signal ?? new AbortController().signal,
   );
   await answerTaskInput(state.cwd, task, text);
-  state.notice = "Answer saved. The task resumes when an execution slot is available.";
+  if (state.report)
+    await reflectTaskAnswers(state.cwd, state.report, { ...state.report, tasks: [task] });
+  state.notice = "Answer saved.";
+  selectNextInput(state, task.id);
+}
+
+function selectNextInput(state: SessionView, answeredId: string): void {
   if (!state.selection) return;
+  const next = state.report?.tasks.find(
+    (entry) => entry.status === "on_hold" && entry.id !== answeredId,
+  );
   delete state.selection.flowStep;
-  state.selection.filter = FILTERS.indexOf("Input");
+  state.selection.filter = FILTERS.indexOf(next ? "Input" : "All");
   state.selection.details = false;
   state.selection.scroll = 0;
-  state.selection.selected =
-    state.report?.tasks.find((entry) => entry.status === "on_hold" && entry.id !== task.id)?.id ??
-    task.id;
+  state.selection.selected = next?.id ?? answeredId;
 }
 
 async function delivery(cwd: string, conversationId: string, id: string): Promise<string> {
