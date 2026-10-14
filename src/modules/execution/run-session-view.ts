@@ -71,7 +71,7 @@ function focusPendingInput(state: SessionView, report: RunReport): void {
   state.selection ??= { filter: 0, selected: "", details: false, scroll: 0 };
   delete state.selection.flowStep;
   Object.assign(state.selection, {
-    filter: FILTERS.indexOf("Input"),
+    filter: FILTERS.indexOf("All"),
     selected: held.id,
     details: false,
     scroll: 0,

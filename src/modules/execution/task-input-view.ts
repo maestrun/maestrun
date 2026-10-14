@@ -17,7 +17,7 @@ export function heldTaskLines(task: TaskState, selected: boolean, width: number)
     border("On hold · awaiting your input"),
     border(pendingInput(task)?.summary ?? "Waiting for your decision"),
     border(pendingInput(task)?.question ?? "Input required"),
-    border("I answer · Enter full question"),
+    border("Enter full question + answer · I answer"),
     ` ${holdColor(`└${"─".repeat(inner)}┘`)}`,
   ];
 }

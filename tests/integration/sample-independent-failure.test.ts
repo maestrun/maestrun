@@ -77,7 +77,7 @@ async function confirmApproval(cli: ReturnType<typeof sessionCli>, cwd: string):
   const task = (await savedReport(cwd)).tasks.find((entry) => entry.id === "sample-confirmation");
   expect(task?.status).toBe("on_hold");
   expect(task?.inputRequests?.[0]?.summary).toContain("simulated PR approval");
-  cli.send("hi");
+  cli.send("\r");
   await cli.wait("Your answer");
   await cli.wait("Simulated approval: type continue");
   const offset = cli.output().length;

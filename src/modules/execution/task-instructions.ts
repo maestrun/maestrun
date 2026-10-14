@@ -84,7 +84,7 @@ function selectNextInput(state: SessionView, answeredId: string): void {
     (entry) => entry.status === "on_hold" && entry.id !== answeredId,
   );
   delete state.selection.flowStep;
-  state.selection.filter = FILTERS.indexOf(next ? "Input" : "All");
+  if (!next) state.selection.filter = FILTERS.indexOf("All");
   state.selection.details = false;
   state.selection.scroll = 0;
   state.selection.selected = next?.id ?? answeredId;

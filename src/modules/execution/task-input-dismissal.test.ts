@@ -37,10 +37,17 @@ async function heldView(cwd: string, count: number): Promise<SessionView & { rep
   };
 }
 
-test.for([1, 2])(
-  "answering removes the box immediately with %i held tasks",
-  async (count, { project }) => {
+test.for([
+  { count: 1, filter: "All" },
+  { count: 2, filter: "All" },
+  { count: 1, filter: "Input" },
+  { count: 2, filter: "Input" },
+] as const)(
+  "answering removes the box with $count held tasks in $filter",
+  async ({ count, filter }, { project }) => {
     const state = await heldView(project.cwd, count);
+    assert(state.selection);
+    state.selection.filter = FILTERS.indexOf(filter);
     const task = state.report.tasks[0];
     assert(task);
     const stale = structuredClone(state.report);
@@ -49,7 +56,7 @@ test.for([1, 2])(
     await state.choosing;
     expect(task.status).toBe("pending");
     expect(task.steps?.[0]?.status).toBe("pending");
-    expect(state.selection?.filter).toBe(FILTERS.indexOf(count === 1 ? "All" : "Input"));
+    expect(state.selection?.filter).toBe(FILTERS.indexOf(count === 1 ? "All" : filter));
     expect(state.selection?.selected).toBe(count === 1 ? "a" : "b");
     expect(visibleTasks(state.report, FILTERS.indexOf("Input")).map((entry) => entry.id)).toEqual(
       count === 1 ? [] : ["b"],

@@ -40,7 +40,7 @@ test.for(["needs-input", "native-input"])(
   },
 );
 
-test("the pending list asks the model question, preserves it on Esc, and saves answers", async ({
+test("the pending list asks the model question, opens from All with Enter, preserves it on Esc, and saves answers", async ({
   project,
 }) => {
   await setupRun(project.cwd);
@@ -48,7 +48,7 @@ test("the pending list asks the model question, preserves it on Esc, and saves a
   const cli = sessionCli(project.cwd, ["run", "--tasks", "tasks.json"]);
   try {
     await cli.wait("2 awaiting input");
-    expect(cli.output()).toContain("On hold");
+    expect(cli.output().split("\x1b[H").at(-1)).toContain("1/3 in view");
     await openAnswer(cli);
     expect(cli.output()).toContain("Which region should this task use?");
     const offset = cli.output().length;
@@ -72,7 +72,7 @@ test("the pending list asks the model question, preserves it on Esc, and saves a
 
 async function openAnswer(cli: ReturnType<typeof sessionCli>): Promise<void> {
   const offset = cli.output().length;
-  cli.send("i");
+  cli.send("\r");
   await vi.waitFor(() => expect(cli.output().slice(offset)).toContain("Your answer"), {
     timeout: 5000,
   });

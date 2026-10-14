@@ -50,7 +50,7 @@ export function renderRunScreen(report: RunReport, state: ViewState, screen: Scr
 function inputNotice(report: RunReport, cwd: string, width: number): string {
   const held = report.tasks.filter((task) => task.status === "on_hold").length;
   return held
-    ? holdColor(cell(`  ${held} awaiting input · H pending list · I answer`, width))
+    ? holdColor(cell(`  ${held} awaiting input · Enter question + answer · H list`, width))
     : chalk.dim(cell(`  ${cwd}`, width));
 }
 
@@ -72,14 +72,17 @@ function footer(report: RunReport, state: ViewState, width: number): string[] {
           : `  ${selectedIndex(tasks, state) + (tasks.length ? 1 : 0)}/${tasks.length} in view`),
       width,
     ),
-    chalk.dim(cell(shortcuts(state, Boolean(report.finishedAt)), width)),
+    chalk.dim(
+      cell(shortcuts(state, Boolean(report.finishedAt), selected?.status === "on_hold"), width),
+    ),
   ];
 }
 
-function shortcuts(state: ViewState, finished: boolean): string {
+function shortcuts(state: ViewState, finished: boolean, held: boolean): string {
   if (state.details)
     return `  ↑/↓ scroll · L ${state.logs ? "results" : "logs"} · I instructions · Enter/Esc back · Ctrl+C options`;
   if (state.flowStep) return "  PgUp/PgDn · Esc tasks · Home/End · F hide";
+  if (held) return "  Enter question + answer · ↑/↓ tasks · Tab filter · H input · Ctrl+C options";
   return finished
     ? "  PgUp/PgDn steps · ↑/↓ tasks · Tab filter · F flow · Enter details · Esc close"
     : "  ↑/↓ tasks · Tab filter · H input · I reply/instruct · Enter details · F flow · Ctrl+C";
