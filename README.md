@@ -17,6 +17,14 @@ Choose one executor and model for the whole workflow, or assign different ones t
 
 **Install → start → review → run.** [Advanced guide](docs/advanced.md)
 
+> **Now available for VS Code:** Plan, run, and follow Maestrun tasks in your editor. [Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode) · [Illustrated setup and usage guide](docs/vscode.md)
+
+![Maestrun in VS Code, with a task dashboard in the editor and Projects and Tasks in the Secondary Side Bar.](docs/images/vscode-dashboard.png)
+
+_Extension 1.0.0, shown with demonstration data._
+
+Use the **terminal** with the steps below, or use the **VS Code extension** to configure workflows, inspect task flowcharts, answer pending questions, and switch projects. Both use the Maestrun CLI, installed separately.
+
 ## Why Maestrun?
 
 - **A short path to your first run.** Install from npm, run `maestrun start`, and choose your executor, model, and workflow. Environment checks help you resolve setup problems before planning.
@@ -150,6 +158,7 @@ The simple sample in progress, with task status and the Implementation → Tests
 
 ## Go further
 
+- [Use Maestrun in VS Code: installation, workflows, task details, and multiple projects](docs/vscode.md)
 - [Plan separately and edit Markdown tasks](docs/advanced.md#planning-and-task-format)
 - [Configure isolated parallel execution](docs/advanced.md#parallel-worktrees)
 - [Customize the terminal layout](docs/advanced.md#terminal-and-layout)
