@@ -71,6 +71,8 @@ test("advanced dependencies consume integrated files after the repair", async ({
   await setupRun(project.cwd);
   const before = await readFile(join(project.cwd, ".maestrun/config.json"), "utf8");
   const cwd = await prepareSample(project.cwd, undefined, "advanced");
+  expect(await gitOutput(cwd, ["ls-files", "--", "plan.md"])).toBe("");
+  expect(await gitOutput(cwd, ["check-ignore", "plan.md"])).toBe("plan.md");
   const paths = new Set<string>();
   const clampStages: string[] = [];
   await expect(

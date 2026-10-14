@@ -9,7 +9,7 @@ import { installExecutors } from "../helpers/fake-executors.js";
 import { test } from "../helpers/project.js";
 import { scriptedUi } from "../helpers/ui.js";
 
-const PROJECT_FILES = [".maestrun", "application.ts", "plan.md", "requirements.md"];
+const PROJECT_FILES = [".gitignore", ".maestrun", "application.ts", "plan.md", "requirements.md"];
 
 async function expectSelectedEffort(log: string, executor: ExecutorId): Promise<void> {
   const records = (await readFile(log, "utf8")).split("\n").filter(Boolean);
