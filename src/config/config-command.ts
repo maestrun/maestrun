@@ -57,6 +57,8 @@ Examples:
   maestrun config execution parallel
   maestrun config execution.concurrency 4
   maestrun config execution.maxRepairs 5
+  maestrun config execution.orchestrator plan
+  maestrun config execution.orchestrator agent
   maestrun config stages planning model your-model-id
   maestrun config stages planning executor claude
   maestrun config stages planning effort high

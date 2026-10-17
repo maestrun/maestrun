@@ -1,6 +1,6 @@
 # Maestrun for VS Code
 
-[← Main guide](../README.md) · [Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode) · [Extension source and releases](https://github.com/maestrun/vscode-extension)
+[← Main guide](../README.md) · [Download latest](https://github.com/maestrun/vscode-extension/releases/latest) · [Extension source and releases](https://github.com/maestrun/vscode-extension)
 
 Configure workflows, generate plans, run tasks, and follow their progress inside VS Code. Use the sidebar while editing code, open a full dashboard for task details, or compare projects with flowcharts.
 
@@ -8,21 +8,21 @@ Configure workflows, generate plans, run tasks, and follow their progress inside
 
 You need **VS Code 1.106+**, a trusted workspace, **Node.js 24 LTS**, and an [installed and authenticated executor](../README.md#1-install). Use Linux, macOS, WSL, or SSH. On Windows, open your project through WSL. Install Node.js, the CLI, and your executor in the same environment as the project, including when using WSL or SSH.
 
-1. Install the CLI separately. Extension **1.0.0** was tested with CLI **0.1.1-beta.5**:
+1. Install the CLI separately. Extension **1.1.0** supports Orchestrator with CLI **0.1.1**; install the latest stable CLI:
 
    ```sh
-   npm install --global @maestrun/maestrun@0.1.1-beta.5
+   npm install --global @maestrun/maestrun@latest
    ```
 
-2. Open [Maestrun in the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode) and click **Install**, or search for `Maestrun.maestrun-vscode` in VS Code's Extensions view. You can also install from a terminal:
+2. Download the `.vsix` from the [latest extension release](https://github.com/maestrun/vscode-extension/releases/latest). In VS Code, run **Extensions: Install from VSIX…** and select the file. You can also install the downloaded package from a terminal:
 
    ```sh
-   code --install-extension Maestrun.maestrun-vscode
+   code --install-extension ./maestrun-vscode-1.1.0.vsix
    ```
 
 3. Open your project folder and click the **Maestrun** Activity Bar icon, or run **Maestrun: Open Maestrun** from the Command Palette (`Ctrl+Shift+P`, or `Cmd+Shift+P` on macOS).
 
-For manual installation, download the `.vsix` from the [extension releases](https://github.com/maestrun/vscode-extension/releases/latest), run **Extensions: Install from VSIX…**, and select the file.
+Maestrun is also listed in the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode). Use the latest GitHub release above for the version described in this guide.
 
 ## Choose how to work
 
@@ -52,6 +52,14 @@ Existing projects with `.maestrun/config.json` appear in **Projects**. Select on
 
 **Cancel execution** stops the run and preserves completed work. Closing the dashboard does not stop a background run. Planning and execution use your executor account and consume its usage.
 
+## Orchestrator: coordinate and inspect the whole plan
+
+Choose **Orchestrator** during workflow setup to use an existing `plan.md` or generate one from a prompt file. Review each task’s steps and model assignments before running. Or use the CLI to enable `execution.orchestrator` as `plan` for predefined tasks or `agent` for agent coordination. Both support sequential or parallel execution.
+
+The task table uses a collapsible hierarchy; sorting keeps children with their parents, and filters retain ancestors. **Flowchart** shows each task once after all its prerequisites, including converging branches and coordinated repairs. **Simple** shows tasks; **Detailed** embeds every task’s steps, custom stages and Git integration. **Horizontal** flows left to right; **Vertical** flows top to bottom, including the steps. The view preserves its direction, detail mode and scroll position during updates. Click a task or step to inspect results and conversation. **All flowcharts** uses the same dependency graph for every project.
+
+Task-specific `Steps`, `Parent` grouping and `Agents` file bindings use the [same plan format and model resolution as the terminal](advanced.md#orchestrator-mode). Generated tasks and repair history survive reconnection; navigating the diagram makes no model calls.
+
 ## Inspect tasks and respond
 
 Select a task in the sidebar, click **View details**, then open **Flowchart**. Click a stage to inspect its results and logs.
@@ -77,14 +85,16 @@ Discovery finds `.maestrun/config.json` in workspace folders and their subfolder
 
 ## Try an example
 
-Run **Maestrun: Run example** from the Command Palette, choose **Simple** or **Advanced**, then select your executor and model and confirm.
+Run **Maestrun: Run example** from the Command Palette, choose **Simple**, **Advanced**, **Orchestrator plan** or **Orchestrator agent**, then select your executor and model and confirm.
 
-| Example  | What it demonstrates                                                                    |
-| -------- | --------------------------------------------------------------------------------------- |
-| Simple   | Two sequential tasks with implementation and tests                                      |
-| Advanced | Five tasks with a pending approval, repair, Git integration, and an intentional failure |
+| Example            | What it demonstrates                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| Simple             | Two sequential tasks with implementation and tests                                                |
+| Advanced           | Five tasks with a pending approval, repair, Git integration, and an intentional failure           |
+| Orchestrator plan  | Six predefined tasks, eleven worker stages and nested dependencies                                |
+| Orchestrator agent | One objective decomposed into six tasks; targets two coordination calls plus eleven worker stages |
 
-Advanced requires **Git 2.38+**. Answer `continue` when prompted; the run ends **Failed** by design after the remaining work finishes. Both examples consume your executor account's usage. See [sample details](advanced.md#sample).
+Advanced requires **Git 2.38+**. Answer `continue` when prompted; the run ends **Failed** by design after the remaining work finishes. All examples consume your executor account's usage. See [sample details](advanced.md#sample).
 
 Examples created from the terminal inside the workspace also appear in **Projects**. Click **Refresh** to discover them immediately.
 

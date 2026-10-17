@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import { VERSION } from "./shared/version.js";
 import { createPlan } from "./modules/planning/index.js";
-import { initialize, initializeFromTemplate } from "./modules/workflow/index.js";
+import { initializeFromTemplate } from "./modules/workflow/index.js";
 import { runWorkflow, runSession, showRun } from "./modules/execution/index.js";
 import { exportPlugin } from "./modules/plugins/index.js";
 import { registerSample } from "./sample-command.js";
 import { registerTemplate } from "./template-command.js";
 import { registerOnboarding, registerStart } from "./onboarding-command.js";
-import { doctor } from "./modules/onboarding/index.js";
+import { doctor, initializeProject } from "./modules/onboarding/index.js";
 import { runWithRecovery } from "./modules/onboarding/index.js";
 import { interactive } from "./cli.js";
 import { configure, CONFIG_HELP } from "./config/index.js";
@@ -25,7 +25,7 @@ async function initCommand(options: { template?: boolean; advanced?: boolean }):
     "init",
     options.template
       ? initializeFromTemplate
-      : (input) => initialize({ ...input, quick: !options.advanced }),
+      : (input) => initializeProject({ ...input, quick: !options.advanced }),
   );
 }
 
@@ -83,7 +83,7 @@ function registerRun(program: Command): void {
 function registerSetup(program: Command): void {
   program
     .command("init")
-    .description("Quick setup: executor, model and standard or customized workflow")
+    .description("Quick setup: executor, model and standard, orchestrator or customized workflow")
     .option("--advanced", "Open all workflow settings directly")
     .option("--template", "Choose a saved template and review its settings before initializing")
     .action(initCommand);

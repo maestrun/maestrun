@@ -3,15 +3,24 @@ import type { Draft } from "../../contracts/workflow.js";
 import type { RunReport } from "../../contracts/run.js";
 import type { FileSnapshot } from "../../shared/atomic.js";
 import { snapshotFile, atomicWrite } from "../../shared/atomic.js";
-import { buildReport, loadTasks, parseTaskDocument, readCheckpoint } from "../execution/index.js";
+import {
+  buildReport,
+  loadTasks,
+  parseTaskDocument,
+  readCheckpoint,
+  readOrchestration,
+  taskChecklist,
+} from "../execution/index.js";
 import { renderPlan } from "./prompt.js";
-import { CancelError } from "../../shared/errors.js";
+import { CancelError, UserError } from "../../shared/errors.js";
 import type { CommandInput } from "../../shared/command.types.js";
 import { advancedDocuments, saveAdvancedPlan } from "./advanced-plan.js";
+import { reviewTaskPlan, validateOrchestratorPlan } from "./task-plan-review.js";
 
 export async function previousPlan(cwd: string, plan: FileSnapshot): Promise<string | undefined> {
   const progress = await readCheckpoint(cwd);
   if (!progress.length) return undefined;
+  await checkOrchestratedReplan(cwd);
   const tasks = plan.exists ? await loadTasks(cwd, "plan.md") : [];
   return JSON.stringify({
     tasks,
@@ -33,6 +42,7 @@ export async function validateReplan(
   content: string,
 ): Promise<RunReport | undefined> {
   if (!draft.previousPlan) return undefined;
+  await checkOrchestratedReplan(cwd);
   const markdown = draft.planMode === "advanced" ? (advancedDocuments(content)[2] ?? "") : content;
   const tasks = parseTaskDocument(
     markdown.trim().replace(/^```(?:markdown|md)?\s*\n([\s\S]*)\n```$/u, "$1"),
@@ -63,14 +73,24 @@ export async function saveGeneratedPlan(
   content: string,
 ): Promise<void> {
   const { draft, path, plan } = output;
+  const tasks = await validateOrchestratorPlan(input.cwd, draft, content);
   const report = await validateReplan(input.cwd, draft, content);
   const markdown =
     draft.planMode === "advanced" ? await saveAdvancedPlan(input, draft, content) : content;
   if (input.signal.aborted) throw new CancelError();
   await saveReplannedPlan(
     { cwd: input.cwd, path, plan },
-    renderPlan(draft.config, markdown, draft.guidance),
+    taskChecklist(renderPlan(draft.config, markdown, draft.guidance), report?.tasks ?? tasks),
     report,
   );
   input.ui.log(`Plan saved: ${path}`);
+  if (draft.config.execution?.orchestrator) await reviewTaskPlan(input, draft.config, tasks);
+}
+
+async function checkOrchestratedReplan(cwd: string): Promise<void> {
+  if (await readOrchestration(cwd))
+    throw new UserError(
+      "This run has a saved orchestration plan.",
+      "Resume with maestrun run. To generate a replacement plan, first finish the run and archive its .maestrun/run.json; keep any retained worktrees needed for recovery.",
+    );
 }

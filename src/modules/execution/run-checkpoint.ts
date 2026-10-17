@@ -1,5 +1,5 @@
 import { restoreTask } from "./restore-task.js";
-import { createHash } from "node:crypto";
+import { taskFingerprint } from "./task-agents.js";
 import { join } from "node:path";
 import type { RunReport, TaskState } from "../../contracts/run.js";
 import type { Task } from "../../contracts/tasks.js";
@@ -35,6 +35,9 @@ function savedTask(value: unknown): TaskState {
     value.completedSteps > value.totalSteps ||
     value.totalSteps < 1 ||
     (value.status === "completed" && value.completedSteps !== value.totalSteps) ||
+    (value.dependsOn !== undefined &&
+      (!Array.isArray(value.dependsOn) ||
+        !value.dependsOn.every((id) => typeof id === "string"))) ||
     (value.definition !== undefined && typeof value.definition !== "string") ||
     (value.integration !== undefined && !["pending", "running"].includes(String(value.integration)))
   )
@@ -120,8 +123,7 @@ export async function resumeReport(
   config: Config,
   tasks: readonly Task[],
 ): Promise<RunReport> {
-  const previous = await readCheckpoint(cwd);
-  return buildReport(config, tasks, { previous });
+  return buildReport(config, tasks, { previous: await readCheckpoint(cwd) });
 }
 export function buildReport(
   config: Config,
@@ -138,9 +140,7 @@ export function buildReport(
       restoreTask(
         {
           ...initialTaskState(config, task),
-          definition: createHash("sha256")
-            .update(JSON.stringify({ ...task, dependsOn: [...task.dependsOn].sort() }))
-            .digest("hex"),
+          definition: taskFingerprint(task),
         },
         previous.find((entry) => entry.id === task.id),
         options.replan,

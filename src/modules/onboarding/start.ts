@@ -7,7 +7,7 @@ import { resumableSession } from "../execution/index.js";
 import { runWithRecovery } from "./run-recovery.js";
 import { runWorkflow } from "../execution/index.js";
 import { createPlan } from "../planning/index.js";
-import { initialize } from "../workflow/index.js";
+import { initializeProject } from "./initialize-project.js";
 import { doctor } from "./doctor.js";
 
 type StartInput = CommandInput & {
@@ -17,7 +17,7 @@ type StartInput = CommandInput & {
 };
 const SERVICES = {
   doctor,
-  initialize,
+  initialize: initializeProject,
   plan: createPlan,
   validate: runWorkflow,
   run: runWithRecovery,

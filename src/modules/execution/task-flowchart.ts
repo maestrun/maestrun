@@ -10,6 +10,7 @@ import { tokenUsageLabel } from "../../shared/token-usage.js";
 
 import { taskDisplaySteps } from "./task-display-steps.js";
 import { holdColor } from "./task-input-view.js";
+import { orchestrationFlowchart } from "./orchestration-flowchart.js";
 
 const STEP_HEIGHT = 7;
 
@@ -118,6 +119,10 @@ export function executionBody(
   const tasks = visibleTasks(report, state.filter);
   const task = tasks[selectedIndex(tasks, state)];
   const flow = state.layout?.flowchart ?? DEFAULT_LAYOUT.flowchart;
+  if (report.orchestration && !state.details)
+    return state.flow
+      ? orchestrationFlowchart(report, state, size)
+      : taskTable(report, state, size);
   const sizes = panelSizes(size, flow, flowWidth(task));
   if (state.flow && state.flowStep && !state.details && !sizes)
     return taskFlowchart(task, size, state.flowStep);

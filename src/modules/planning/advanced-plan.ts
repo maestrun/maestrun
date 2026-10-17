@@ -19,6 +19,7 @@ export const ADVANCED_FORMAT = [
   "# Implementation tasks",
   "Derive ordered tasks from the PRD and technical specification, with dependencies, requirement references, acceptance criteria and verification.",
   "Write runnable Markdown task sections only in the tasks document. Keep task instructions self-contained.",
+  "Always include concrete executable tasks, even when the request emphasizes PRD or techspec documents. Maestrun also adds a task checklist (- [ ] task-id: title) to plan.md and marks completed tasks from execution evidence.",
   "Include assumptions and unresolved questions in the relevant document. Use relative links prd.md, techspec.md and tasks.md between documents.",
   "Maestrun will split this response into prd.md, techspec.md and tasks.md inside the selected folder. Do not create files yourself.",
 ].join("\n");

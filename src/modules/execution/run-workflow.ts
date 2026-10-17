@@ -7,7 +7,9 @@ import type { RunContext } from "./execution.types.js";
 import type { RunReport } from "../../contracts/run.js";
 import { failureSummary } from "./run-failure.js";
 import { schedule } from "./scheduler.js";
-import { resumeReport } from "./run-checkpoint.js";
+import { orchestrationReport } from "./orchestration-state.js";
+import { runOrchestration } from "./orchestration.js";
+import { saveOrchestrationConfig } from "./orchestration-config.js";
 import { executeStep } from "./step-executor.client.js";
 import type { Config } from "../../contracts/workflow.js";
 import type { Task } from "../../contracts/tasks.js";
@@ -20,7 +22,7 @@ export async function runWorkflow(
 ): Promise<void> {
   const { config } = await loadConfig(input.cwd);
   if (!config) throw new UserError("No saved workflow was found.", "Run maestrun init first.");
-  if (config.stages.length < 2)
+  if (config.stages.length < 2 && !config.execution?.orchestrator)
     throw new UserError(
       "No execution stages are configured.",
       "Select Implementation, Tests, QA, or custom stages with maestrun init.",
@@ -35,17 +37,18 @@ async function previewRun(
   config: Config,
   tasks: readonly Task[],
 ): Promise<void> {
-  const report = await resumeReport(input.cwd, config, tasks);
+  const report = await orchestrationReport(input.cwd, config, tasks);
   if (config.execution?.mode === "parallel") await checkWorktreeRepository(input.cwd);
-  for (const task of tasks) {
+  if (report.orchestration)
+    input.ui.log(`Main task · Orchestrator: ${report.orchestration.strategy}`);
+  for (const task of report.orchestration?.tasks ?? tasks) {
     const state = report.tasks.find((entry) => entry.id === task.id);
-    const completed =
-      state?.status === "completed" ? config.stages.length : (state?.completedSteps ?? 0);
+    const completed = state?.status === "completed" ? Infinity : (state?.completedSteps ?? 0);
     const stages = taskStages(config, task)
       .slice(completed)
       .map((stage) => `${stage.id}: ${stage.executor}/${stage.model}`);
     input.ui.log(
-      `${task.id}: ${task.title} | depends on: ${task.dependsOn.join(", ") || "none"} | ${stages.join(" → ") || "Done — skipped"}`,
+      `${report.orchestration ? "  ├─ " : ""}${task.id}: ${task.title} | depends on: ${task.dependsOn.join(", ") || "none"} | ${stages.join(" → ") || "Done — skipped"}`,
     );
   }
   input.ui.log(
@@ -61,13 +64,12 @@ async function executeRun(
   if (input.signal.aborted) throw new CancelError();
   const release = await lockRun(input.cwd);
   try {
-    const report = await resumeReport(input.cwd, config, tasks);
-    const done = report.tasks.filter((task) => task.status === "completed").length;
-    input.ui.log(
-      `Saved progress: ${done}/${tasks.length} tasks complete; completed tasks and steps will be skipped.`,
-    );
+    const report = await orchestrationReport(input.cwd, config, tasks);
+    const done = savedProgress(input, report);
     const extensions =
-      done === tasks.length ? [] : await loadExtensions(cwd, config.plugins ?? [], trustPlugins);
+      done === report.tasks.length
+        ? []
+        : await loadExtensions(cwd, config.plugins ?? [], trustPlugins);
     await recordedRun(
       {
         ...input,
@@ -88,10 +90,20 @@ async function recordedRun(
   context: Omit<RunContext, "update">,
   tasks: readonly Task[],
 ): Promise<void> {
-  const output = reporter(context.cwd, context.report, context.ui);
+  const output = reporter(context.cwd, context.report, {
+    ui: context.ui,
+    ...(context.tasksPath ? { tasksPath: context.tasksPath } : {}),
+  });
   try {
+    if (context.report.orchestration)
+      await saveOrchestrationConfig(
+        context.cwd,
+        context.config,
+        context.report.orchestration.tasks,
+      );
     await output.save();
-    await schedule({ ...context, update: output.update }, tasks);
+    if (context.report.orchestration) await runOrchestration({ ...context, update: output.update });
+    else await schedule({ ...context, update: output.update }, tasks);
     context.report.finishedAt = new Date().toISOString();
     await output.save();
   } finally {
@@ -110,4 +122,12 @@ function finishRun(report: RunReport, input: CommandInput): void {
       "View evidence with maestrun run --status and .maestrun/run.log. Adjust settings with maestrun init --advanced, then resume with the same maestrun run --tasks option. Completed work is preserved.",
     );
   input.ui.log(`Completed ${completed}/${report.tasks.length} tasks.`);
+}
+
+function savedProgress(input: CommandInput, report: RunReport): number {
+  const done = report.tasks.filter((task) => task.status === "completed").length;
+  input.ui.log(
+    `Saved progress: ${done}/${report.tasks.length} tasks complete; completed tasks and steps will be skipped.`,
+  );
+  return done;
 }

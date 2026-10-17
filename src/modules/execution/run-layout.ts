@@ -5,7 +5,8 @@ import type { RunReport } from "../../contracts/run.js";
 import { cell } from "../../shared/terminal-text.js";
 import { taskBody } from "./run-task-view.js";
 import { row } from "./run-columns.js";
-import type { ViewState } from "./run-view-state.js";
+import { visibleTasks, type ViewState } from "./run-view-state.js";
+import { taskTree } from "./task-tree.js";
 
 type Size = { width: number; height: number };
 const HEADERS = ["  Task", "Name", "Status", "Stage", "Model", "Effort", "Steps", "in/out"];
@@ -15,9 +16,18 @@ export function taskTable(report: RunReport, state: ViewState, size: Size): stri
     chalk.dim(
       state.details
         ? cell(state.logs ? "  Task logs · L results" : "  Task details · L full logs", size.width)
-        : row(HEADERS, size.width, state.layout?.columns),
+        : report.orchestration
+          ? cell(`  Task tree · D ${state.treeDetails ? "hide" : "show"} all steps`, size.width)
+          : row(HEADERS, size.width, state.layout?.columns),
     ),
-    ...taskBody(report, state, { ...size, height: size.height - 1 }),
+    ...(report.orchestration && !state.details
+      ? taskTree(visibleTasks(report, state.filter), {
+          ...size,
+          ...state,
+          state,
+          height: size.height - 1,
+        })
+      : taskBody(report, state, { ...size, height: size.height - 1 })),
   ];
 }
 

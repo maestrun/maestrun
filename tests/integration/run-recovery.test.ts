@@ -28,7 +28,9 @@ test("recovery offers evidence, configuration and validated resume preserving ru
     .fn()
     .mockRejectedValueOnce(new UserError("Failed task a", "Fix and resume"))
     .mockResolvedValue(true);
-  const configure = vi.fn<typeof initialize>().mockResolvedValue();
+  const configure = vi
+    .fn<typeof initialize>()
+    .mockResolvedValue({ config: { version: 1, stages: [] } });
   const validate = vi.fn(runWorkflow);
   await runWithRecovery(input, { run, configure, validate }, true);
   expect(run).toHaveBeenCalledTimes(2);

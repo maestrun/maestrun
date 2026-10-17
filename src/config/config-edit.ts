@@ -5,7 +5,7 @@ import type { ConfigDocument } from "./config-storage.js";
 const FIELDS: Readonly<Record<string, readonly string[]>> = {
   root: ["stages", "targets", "execution", "timeoutMs", "plugins", "stepPresets"],
   preset: ["name", "executor", "model", "effort"],
-  execution: ["mode", "concurrency", "background", "maxRepairs"],
+  execution: ["mode", "concurrency", "background", "maxRepairs", "orchestrator"],
   assignment: ["executor", "model", "effort"],
   stage: ["id", "executor", "model", "effort", "file"],
   targets: ["frontend", "backend"],

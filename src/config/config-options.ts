@@ -21,21 +21,15 @@ function execution(value: unknown): Execution {
     concurrency > 16
   )
     return invalid("execution.concurrency (integer 1–16)");
-  if (value.background !== undefined && typeof value.background !== "boolean")
-    return invalid("execution.background (boolean)");
-  if (
-    value.maxRepairs !== undefined &&
-    (!Number.isInteger(value.maxRepairs) ||
-      typeof value.maxRepairs !== "number" ||
-      value.maxRepairs < 0 ||
-      value.maxRepairs > 100)
-  )
-    return invalid("execution.maxRepairs (integer 0–100)");
+  validateExecutionOptions(value);
   return {
     mode,
     concurrency,
     ...(typeof value.maxRepairs === "number" ? { maxRepairs: value.maxRepairs } : {}),
     ...(typeof value.background === "boolean" ? { background: value.background } : {}),
+    ...(value.orchestrator === "plan" || value.orchestrator === "agent"
+      ? { orchestrator: value.orchestrator }
+      : {}),
   };
 }
 
@@ -66,4 +60,23 @@ export function configOptions(value: Record<string, unknown>): Partial<Config> {
     ...(typeof value.timeoutMs === "number" ? { timeoutMs: value.timeoutMs } : {}),
     ...(value.plugins === undefined ? {} : { plugins: plugins(value.plugins) }),
   };
+}
+
+function validateExecutionOptions(value: Record<string, unknown>): void {
+  if (value.background !== undefined && typeof value.background !== "boolean")
+    return invalid("execution.background (boolean)");
+  if (
+    value.orchestrator !== undefined &&
+    value.orchestrator !== "plan" &&
+    value.orchestrator !== "agent"
+  )
+    return invalid("execution.orchestrator (plan or agent)");
+  if (
+    value.maxRepairs !== undefined &&
+    (!Number.isInteger(value.maxRepairs) ||
+      typeof value.maxRepairs !== "number" ||
+      value.maxRepairs < 0 ||
+      value.maxRepairs > 100)
+  )
+    return invalid("execution.maxRepairs (integer 0–100)");
 }
