@@ -38,6 +38,8 @@ export function configTable(config: Config): string {
       ["Setting", "Value"],
       ["Config version", String(config.version)],
       ["Execution", config.execution?.mode ?? "sequential"],
+      ["Orchestrator", config.execution?.orchestrator ?? "off"],
+      ...(config.execution?.orchestrator ? [["Task steps", "Defined per task in plan.md"]] : []),
       ["Concurrency", String(config.execution?.concurrency ?? 2)],
       ["Automatic repairs per task", String(config.execution?.maxRepairs ?? DEFAULT_MAX_REPAIRS)],
       ["Parallel isolation", "Git worktree per task"],

@@ -64,7 +64,9 @@ function readMetadata(id: string, lines: string[]): Map<string, string> {
       lines.shift();
       continue;
     }
-    const field = /^- (Depends on|Target):[ \t]*(.*)$/u.exec(lines[0] ?? "");
+    const field = /^- (Depends on|Target|Steps|Parent|Agents|Repairs):[ \t]*(.*)$/u.exec(
+      lines[0] ?? "",
+    );
     if (!field) break;
     const key = field[1] ?? "";
     if (metadata.has(key))
@@ -88,6 +90,7 @@ function markdownTask(id: string, title: string, body: string): Task {
       "Use - Depends on: none or comma-separated task ids.",
     );
   const target = metadata.get("Target");
+  const steps = metadata.get("Steps");
   if (target !== undefined && target !== "frontend" && target !== "backend")
     throw new UserError(
       `Invalid task plan: ${id} has an unknown target.`,
@@ -99,5 +102,22 @@ function markdownTask(id: string, title: string, body: string): Task {
     instructions: lines.join("\n").trim(),
     dependsOn: dependencies === "none" ? [] : dependencies.split(",").map((value) => value.trim()),
     ...(target ? { target } : {}),
+    ...(steps !== undefined
+      ? { steps: steps.split(",").map((value) => value.trim()) as NonNullable<Task["steps"]> }
+      : {}),
+    ...(metadata.has("Parent") ? { parentId: metadata.get("Parent") ?? "" } : {}),
+    ...(metadata.has("Repairs") ? { repairFor: metadata.get("Repairs") ?? "" } : {}),
+    ...(metadata.has("Agents") ? { agents: agentMetadata(metadata.get("Agents") ?? "") } : {}),
   };
+}
+
+function agentMetadata(text: string): NonNullable<Task["agents"]> {
+  try {
+    return JSON.parse(text) as NonNullable<Task["agents"]>;
+  } catch {
+    throw new UserError(
+      "Invalid task plan: Agents must be a JSON object.",
+      'Use - Agents: {"review":"path/to/reviewer.md"}.',
+    );
+  }
 }

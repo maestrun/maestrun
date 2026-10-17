@@ -22,7 +22,7 @@ test("interrupting generation keeps the saved configuration and previous plan", 
         detect: async ({ id }) => ({ id, state: "ready", detail: "Ready", nextAction: "" }),
         generate: async () => {
           controller.abort();
-          return "Generated plan";
+          return "### Task change: Change\n- Depends on: none\n\nImplement the change.";
         },
       },
     ),
@@ -43,7 +43,7 @@ test("a plan edited during generation is preserved", async ({ project }) => {
         detect: async ({ id }) => ({ id, state: "ready", detail: "Ready", nextAction: "" }),
         generate: async () => {
           await writeFile(join(project.cwd, "plan.md"), "user edit");
-          return "Generated plan";
+          return "### Task change: Change\n- Depends on: none\n\nImplement the change.";
         },
       },
     ),

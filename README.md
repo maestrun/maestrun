@@ -9,15 +9,17 @@
 
 **Quick to set up. Easy to run. Yours to customize.**
 
-> **Beta:** Maestrun is still in Beta, so you may encounter bugs. Contributions are welcome—feel free to open issues or submit pull requests to help improve the project.
+[Download the latest release](https://github.com/maestrun/maestrun/releases/latest) · [Orchestrator guide](docs/advanced.md#orchestrator-mode) · [VS Code extension](docs/vscode.md)
 
 Maestrun turns coding requirements into a plan and runs tasks with **Codex, Claude Code, GitHub Copilot CLI, or Grok Build**. Start with a guided workflow, review the plan, and follow each task through implementation and tests.
 
-Choose one executor and model for the whole workflow, or assign different ones to each stage. Your settings stay in a readable, editable **`config.json`**.
+**Orchestrator coordinates the whole project.** Follow a predefined plan or let an agent create and coordinate subtasks, assign each task its own steps and specialist agents, and track dependencies in a nested flowchart. Sequential and parallel runs preserve completed work and can resume from saved checkpoints.
+
+Choose one executor and model for the whole workflow, or assign different ones to each stage or task. Your settings stay in a readable, editable **`config.json`**.
 
 **Install → start → review → run.** [Advanced guide](docs/advanced.md)
 
-> **Now available for VS Code:** Plan, run, and follow Maestrun tasks in your editor. [Install from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=Maestrun.maestrun-vscode) · [Illustrated setup and usage guide](docs/vscode.md)
+> **Now available for VS Code:** Plan, run, and follow Maestrun tasks in your editor. [Download the latest extension](https://github.com/maestrun/vscode-extension/releases/latest) · [Illustrated setup and usage guide](docs/vscode.md)
 
 ![Maestrun in VS Code, with a task dashboard in the editor and Projects and Tasks in the Secondary Side Bar.](docs/images/vscode-dashboard.png)
 
@@ -27,6 +29,7 @@ Use the **terminal** with the steps below, or use the **VS Code extension** to c
 
 ## Why Maestrun?
 
+- **An orchestrator for the whole plan.** Coordinate predefined or agent-created tasks, custom steps, specialist agent files, and follow-up repairs. Inspect every dependency and task step in the terminal or VS Code.
 - **A short path to your first run.** Install from npm, run `maestrun start`, and choose your executor, model, and workflow. Environment checks help you resolve setup problems before planning.
 - **A clear view of the work.** Follow task progress, inspect stage output, send instructions, and reconnect to background runs.
 - **Customization at your own pace.** Use the standard workflow, adjust settings in the terminal, or edit JSON directly. Add custom steps with Markdown instructions.
@@ -38,13 +41,13 @@ Use the **terminal** with the steps below, or use the **VS Code extension** to c
 You need **Node.js 24 LTS** (also supported: 22.13+ and 26+) and **Linux, macOS, or WSL**. On Windows, run `wsl --install`, then install Node, Maestrun, and your executor inside Linux.
 
 ```sh
-npm install --global @maestrun/maestrun@beta
+npm install --global @maestrun/maestrun@latest
 ```
 
-The npm package includes compiled code. To update:
+`latest` installs the current stable release, including Orchestrator. The npm package includes compiled code. To update:
 
 ```sh
-npm install --global @maestrun/maestrun@beta
+npm install --global @maestrun/maestrun@latest
 ```
 
 Install and sign in to **at least one** executor:
@@ -69,11 +72,13 @@ Maestrun checks your environment and guides you through setup. For a new workflo
 
 1. An available executor.
 2. An exact model from the available catalog, or enter its ID manually.
-3. **Standard** or **Customize**.
+3. **Standard**, **Orchestrator**, or **Customize**.
 
 **Standard** uses the same executor and model for **Planning → Implementation → Tests**, with sequential execution. Review the settings table, provide your requirements, and review the task preview before starting execution.
 
 Existing configuration, plans, and progress are reused. You can return to the same project and run `maestrun start` again.
+
+To set up orchestration, run `maestrun init` and choose **Orchestrator**. Choose sequential or parallel task execution; agent coordination is automatic. New workflows configure Planning as the default agent assignment. If `plan.md` exists, Maestrun asks whether to reuse it. Otherwise, or if you decline reuse, enter a prompt file path (`prompt.md` by default) and Maestrun generates `plan.md`, defining the appropriate steps for each task: for example, Research → Write report for one task and Fact check for another. The final review shows each task's steps and models. Edit the task's `Steps` metadata and instructions in `plan.md`, preview with `maestrun run --dry-run`, then run `maestrun run`. For an existing workflow, the Orchestrator shortcut keeps its configured stages as assignment overrides.
 
 ## 3. Make the workflow yours
 
@@ -133,6 +138,8 @@ See [configuration and global defaults](docs/advanced.md#workflow-and-configurat
 
 During an interactive run, **Enter** opens task details, **F** shows the stage flowchart, and **I** lets you send instructions to a running model task. **Ctrl+C** offers background execution or cancellation.
 
+For a main task coordinating the workflow, choose **Orchestrator** or **Orchestrator agent** in the advanced execution settings, or run `maestrun config execution.orchestrator plan` (predefined tasks) or `maestrun config execution.orchestrator agent` (the Planning model creates and coordinates tasks). Sequential and parallel execution remain available. The terminal shows a task tree; press **D** to show every task's steps, **PgUp/PgDn** to scroll, and **Enter** for individual task details. Each task can select its own steps with `- Steps: implementation, testing`. See [orchestrator mode](docs/advanced.md#orchestrator-mode).
+
 When a model needs a decision, a layout choice, or an external action such as PR approval or login, its task goes **On hold** with an orange border, the reason for waiting, and the model's question. Held tasks appear in **All**. Press **Enter** on the selected task to show the full question and context with the answer field directly below. **H** optionally filters to pending inputs, **↑ / ↓** selects another task, and **I** also opens the answer field. **Esc** leaves the question pending. Saving an answer closes its box and selects the next pending task in the same tab. Answered tasks resume their current stage with the saved files and answers; completed stages stay complete. Independent tasks continue, and waiting uses no repair attempts or model execution time. Questions and answers survive reconnection: open `maestrun` to answer a background run, or use `maestrun run` after a stopped run.
 
 Model-reported failures can trigger up to **5 automatic repair cycles per task per run** by default. You can change this limit or disable repairs. After a failure, choose **View evidence**, **Adjust configuration**, or **Resume**. Executor errors and timeouts stop the affected task immediately.
@@ -144,9 +151,13 @@ Keep **`.maestrun/run.json`**: it stores completion checkpoints. Parallel runs a
 ```sh
 maestrun sample          # 2 sequential tasks: implementation and tests
 maestrun sample advanced # 5 tasks: on hold, independent failure, QA repair, and integration
+maestrun sample orchestrator-plan  # 6 predefined tasks: 11 worker stages
+maestrun sample orchestrator-agent # 6 agent-created tasks: target 13 model calls total
 ```
 
-Each run creates a separate sample folder and uses your selected model. Both samples use tiny functions and Node.js assertions, with no dependency installation. Simple uses four model stages and no automatic repairs; advanced allows one repair per task. Select low effort for a lighter run; real executor usage still applies. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
+Each run creates a separate sample folder and uses your selected model. All samples use tiny functions and Node.js assertions, with no dependency installation. Simple uses four model stages and no automatic repairs; advanced allows one repair per task. Select low effort for a lighter run; real executor usage still applies. The advanced sample requires **Git 2.38+**. [Sample tasks and details](docs/advanced.md#sample)
+
+The orchestrator samples build three tiny functions with **6 tasks** and **11 worker stages**: Add (Implementation → Tests → Review), Clamp (Implementation → Review), Clamp tests (Tests), Score (Implementation → Tests → Review), Score tests (Tests), and Review (Review). Nested children demonstrate several tree levels. `orchestrator-plan` supplies the tasks; `orchestrator-agent` asks the agent to create them, targeting 2 coordination calls plus 11 worker calls. Both use sequential execution, short summaries, Node.js assertions and zero automatic repairs. Choose low effort to reduce usage; the agent's call count depends on following the supplied scope. **F** shows the nested flowchart; **V** switches horizontal (left to right) / vertical (top to bottom), including the steps; **D** switches between tasks and the full step flowchart inside every task. **Shift+←/→** pans across the tree without model calls.
 
 Advanced includes a simulated PR approval: press **Enter** on the held task in **All** and type `continue`. No real PR or login is needed. One independent task intentionally fails while the other four complete. Noninteractive runs wait for the same confirmation; reconnect in a terminal to answer. The final run status is failed (exit code 1) after the remaining workflow finishes.
 

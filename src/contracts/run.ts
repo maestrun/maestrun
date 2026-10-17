@@ -61,6 +61,8 @@ export type TaskWorktree = {
   retained?: { id: string; base: string }[];
 };
 export type TaskState = {
+  parentId?: string;
+  dependsOn?: readonly string[];
   integration?: "pending" | "running";
   worktree?: TaskWorktree;
   id: string;
@@ -94,6 +96,14 @@ export type TaskState = {
   conversation?: TaskConversation;
 };
 export type RunReport = {
+  orchestration?: {
+    strategy: "plan" | "agent";
+    source: readonly Task[];
+    tasks: readonly Task[];
+    phase: "coordinate" | "execute" | "complete";
+    round: number;
+    repairRounds?: number;
+  };
   version: 1;
   startedAt: string;
   finishedAt?: string;

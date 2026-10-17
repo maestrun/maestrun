@@ -78,7 +78,9 @@ if (args.includes('app-server')) {
     if (mode === 'unsupported') { process.stderr.write('model is unsupported'); process.exit(1); }
     if (mode === 'failure') { process.stderr.write('generation failed'); process.exit(1); }
     if (mode === 'empty') { if (executor === 'codex') emit({ type: 'turn.completed' }); else emit({ subtype: 'success', is_error: false, result: '' }); return; }
-    const plan = '## Objective and scope\\nA small change.\\n\\n## Tasks\\n1. Implement the requested command. Acceptance: returns the expected result.\\n\\n## Verification\\nRun the command and tests.\\n\\n## Assumptions and unresolved questions\\nNone.';
+    const plan = input.includes('Define a workflow for each task in the plan.')
+      ? '## Tasks\\n\\n### Task research: Research the topic\\n\\n- Depends on: none\\n- Steps: custom:Research, custom:Write report\\n\\n#### Research\\nCollect evidence.\\n\\n#### Write report\\nWrite a report citing evidence.\\n\\n## Verification\\nCheck sources.'
+      : '## Objective and scope\\nA small change.\\n\\n## Tasks\\n### Task command: Implement the requested command\\n- Depends on: none\\n\\nAcceptance: returns the expected result.\\n\\n## Verification\\nRun the command and tests.\\n\\n## Assumptions and unresolved questions\\nNone.';
     if (mode === 'streaming') {
       if (executor === 'claude') {
         if (!args.includes('stream-json') || !args.includes('--include-partial-messages') || !args.includes('--verbose')) process.exit(2);

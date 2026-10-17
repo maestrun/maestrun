@@ -56,7 +56,10 @@ function recoverDirectory(directory: string, listed: boolean, error: UserError):
   return parent;
 }
 
-async function filePath(context: CommandInput, initial?: string): Promise<Requirements> {
+export async function selectRequirementsPath(
+  context: CommandInput,
+  initial?: string,
+): Promise<Requirements> {
   let path = initial ?? "";
   while (true) {
     path = (
@@ -108,7 +111,7 @@ export async function selectRequirements(
       if (discovered.includes(method)) return await readRequirements(context.cwd, method);
       if (method === "file") return await filePicker(context);
       if (method === "path")
-        return await filePath(
+        return await selectRequirementsPath(
           context,
           existing?.source === "Pasted text" ? undefined : existing?.source,
         );

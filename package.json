@@ -1,6 +1,6 @@
 {
   "name": "@maestrun/maestrun",
-  "version": "0.1.1-beta.5",
+  "version": "0.1.1",
   "license": "SUL-1.0",
   "publishConfig": {
     "access": "public",
@@ -55,6 +55,8 @@
     "examples/qa-refactor/plan.md",
     "examples/simple/plan.md",
     "examples/advanced/plan.md",
+    "examples/orchestrator-plan/plan.md",
+    "examples/orchestrator-agent/plan.md",
     "scripts/install.mjs"
   ],
   "engines": {

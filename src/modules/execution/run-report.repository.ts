@@ -8,6 +8,7 @@ import type { Ui } from "../../shared/ui.types.js";
 import { pendingInput } from "./task-input.js";
 import { cleanText } from "../../shared/terminal-text.js";
 import { tokenUsageLabel } from "../../shared/token-usage.js";
+import { saveTaskChecklist } from "./task-checklist.js";
 
 export async function lockRun(cwd: string): Promise<() => Promise<void>> {
   await ensureStateDirectory(cwd);
@@ -33,23 +34,15 @@ export function stateLine(state: TaskState): string {
 export function reporter(
   cwd: string,
   report: RunReport,
-  ui: Ui,
+  options: { ui: Ui; tasksPath?: string },
 ): {
   save: () => Promise<void>;
   update: (state: TaskState) => Promise<void>;
   close: () => void;
 } {
-  let pending = Promise.resolve();
+  const { ui } = options;
   const view = ui.runView?.(report, cwd);
-  const path = join(cwd, ".maestrun", "run.json");
-  const save = (): Promise<void> => {
-    const content = `${JSON.stringify(report, null, 2)}\n`;
-    pending = pending.then(async () => {
-      await ensureStateDirectory(cwd);
-      await atomicWrite(path, content, await snapshotFile(path));
-    });
-    return pending;
-  };
+  const save = reportWriter(cwd, report, options.tasksPath ?? "plan.md");
   return {
     save,
     close: () => view?.close(),
@@ -58,6 +51,21 @@ export function reporter(
       else logProgress(ui, report, state);
       await save();
     },
+  };
+}
+
+function reportWriter(cwd: string, report: RunReport, tasksPath: string): () => Promise<void> {
+  let pending = Promise.resolve();
+  const path = join(cwd, ".maestrun", "run.json");
+  return (): Promise<void> => {
+    const content = `${JSON.stringify(report, null, 2)}\n`;
+    const tasks = report.tasks.map(({ id, title, status }) => ({ id, title, status }));
+    pending = pending.then(async () => {
+      await ensureStateDirectory(cwd);
+      await atomicWrite(path, content, await snapshotFile(path));
+      await saveTaskChecklist(cwd, tasksPath, tasks);
+    });
+    return pending;
   };
 }
 

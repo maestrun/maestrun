@@ -9,7 +9,7 @@ import {
 } from "../../shared/errors.js";
 import { DEFAULT_MAX_REPAIRS } from "../../contracts/workflow.js";
 import { previousStageResults } from "./step-evidence.js";
-import { prepareRepair } from "./task-repair.js";
+import { coordinatorRepair, prepareRepair } from "./task-repair.js";
 import type { RunContext } from "./execution.types.js";
 import type { TaskState } from "../../contracts/run.js";
 import type { Task } from "../../contracts/tasks.js";
@@ -46,7 +46,7 @@ async function runWithRepairs(context: RunContext, task: Task, state: TaskState)
       return;
     } catch (error) {
       checkCancellation(context.signal);
-      if (attempt >= limit) throw error;
+      if (attempt >= limit || coordinatorRepair(context, task, error)) throw error;
       prepareRepair(state, taskStages(context.config, task), {
         error,
         attempt: attempt + 1,

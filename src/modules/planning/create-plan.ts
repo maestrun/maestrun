@@ -63,8 +63,9 @@ const DEFAULT_SERVICES: Services = {
 
 export async function createPlan(
   input: PlanInput,
-  services: Services = DEFAULT_SERVICES,
+  overrides: Partial<Services> = {},
 ): Promise<void> {
+  const services = { ...DEFAULT_SERVICES, ...overrides };
   const saved = await loadConfig(input.cwd);
   if (!saved.config)
     throw new UserError(

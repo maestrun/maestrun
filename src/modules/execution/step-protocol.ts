@@ -3,7 +3,7 @@ import { UserError, RefactorError, StepFailedError } from "../../shared/errors.j
 import { codexArguments, copilotArguments, grokArguments } from "../executors/index.js";
 import { readRequirements } from "../../shared/requirements.js";
 import { inputPrompt, requireTaskInput } from "./task-input.js";
-import { evidencePrompt } from "./step-evidence.js";
+import { evidencePrompt, executionPrompt } from "./step-evidence.js";
 import type { StepInput } from "../../contracts/run.js";
 
 export const CODEX_NETWORK_ARGUMENTS = [
@@ -66,11 +66,10 @@ function verificationPrompt(stage: StepInput["stage"]): string {
 }
 
 export async function stepPrompt(input: StepInput): Promise<string> {
-  const instructions = input.stage.file
-    ? (await readRequirements(input.cwd, input.stage.file)).text
-    : "";
+  const instructions = await instructionFiles(input);
   return [
     `Run only the ${stageLabel(input.stage.id)} stage for task ${input.task.id}: ${input.task.title}.`,
+    ...executionPrompt(input),
     "Read plan.md, if present, for the full plan and project skills/rules. Follow repository instructions. Do not commit, push, deploy, or start other tasks.",
     "Other independent tasks may be running. Limit edits and commands to this task's scope.",
     verificationPrompt(input.stage),
@@ -78,14 +77,14 @@ export async function stepPrompt(input: StepInput): Promise<string> {
     'Return ONLY JSON: {"status":"completed"|"failed"|"refactor","summary":"result and verification evidence"}. Use refactor when the step needs changes before it can pass.',
     ...inputPrompt(input),
     "Use failed for execution blockers, failed checks, or incomplete work unrelated to a user decision. Never claim unrun checks passed.",
-    `The orchestrator allows up to ${input.maxRepairs ?? DEFAULT_MAX_REPAIRS} automatic repair cycles per task in this run after a failed or refactor result, returning to Implementation when configured and rerunning subsequent stages. Report concrete findings; do not run other stages yourself.`,
+    `The orchestrator allows up to ${input.maxRepairs ?? DEFAULT_MAX_REPAIRS} automatic repair cycles per task in this run after a failed or refactor result, returning to Implementation when configured and rerunning subsequent stages. In agent orchestration, refactor without an earlier Implementation step returns to the coordinator for specialist repair tasks before this review retries. Report concrete findings; do not run other stages yourself.`,
     ...(input.projectCwd
       ? [
           "This task runs in an isolated Git worktree. Keep all edits and dependency installation here; do not modify the main project or sibling worktrees. Do not change Git branches or commits. Use task-specific ports and database names for checks.",
         ]
       : []),
     input.task.instructions,
-    instructions,
+    ...instructions,
     ...evidencePrompt(input),
     ...(input.feedback
       ? [
@@ -94,6 +93,16 @@ export async function stepPrompt(input: StepInput): Promise<string> {
         ]
       : []),
   ].join("\n");
+}
+
+async function instructionFiles(input: StepInput): Promise<string[]> {
+  const files = [
+    [input.projectCwd ?? input.cwd, input.stage.agent],
+    [input.cwd, input.stage.file],
+  ] as const;
+  return Promise.all(
+    files.map(async ([cwd, path]) => (path ? (await readRequirements(cwd, path)).text : "")),
+  );
 }
 
 export function stepResult(text: string): string {

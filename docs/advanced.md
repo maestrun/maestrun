@@ -7,6 +7,7 @@ Use this reference when you need more control. Run `maestrun <command> --help` f
 - [Workflow and configuration](#workflow-and-configuration)
 - [Templates](#templates)
 - [Planning and task format](#planning-and-task-format)
+- [Orchestrator mode](#orchestrator-mode)
 - [Execution and recovery](#execution-and-recovery)
 - [Terminal and layout](#terminal-and-layout)
 - [Extensions and host plugins](#extensions-and-host-plugins)
@@ -40,16 +41,17 @@ maestrun config stages.planning.effort null # remove an optional override
 
 Changes save immediately. Paths accept spaces or dots, stage IDs or zero-based indexes. Use spaced paths for IDs containing dots: `stages 'custom:Audit.v2' effort high`. JSON can replace entire sections. Invalid changes preserve the file.
 
-| Setting                 | Default / constraint                                                |
-| ----------------------- | ------------------------------------------------------------------- |
-| `execution.mode`        | `sequential` or `parallel`                                          |
-| `execution.concurrency` | 1–16; defaults to 2 when omitted; sequential runs one task          |
-| `execution.maxRepairs`  | 5 repair cycles per task per run; integer 0–100; 0 disables repairs |
-| `execution.background`  | `false`                                                             |
-| `timeoutMs`             | 600000; range 1000–86400000, per executor invocation                |
-| Stage `effort`          | Executor default when unset                                         |
-| `targets`               | Optional; requires both frontend and backend assignments            |
-| `plugins`               | Empty; project-relative `./…mjs` or `./…js` modules                 |
+| Setting                  | Default / constraint                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| `execution.orchestrator` | `null` (disabled), `plan` (predefined tasks), or `agent` (Planning coordinates tasks) |
+| `execution.mode`         | `sequential` or `parallel`                                                            |
+| `execution.concurrency`  | 1–16; defaults to 2 when omitted; sequential runs one task                            |
+| `execution.maxRepairs`   | 5 repair cycles per task per run; integer 0–100; 0 disables repairs                   |
+| `execution.background`   | `false`                                                                               |
+| `timeoutMs`              | 600000; range 1000–86400000, per executor invocation                                  |
+| Stage `effort`           | Executor default when unset                                                           |
+| `targets`                | Optional; requires both frontend and backend assignments                              |
+| `plugins`                | Empty; project-relative `./…mjs` or `./…js` modules                                   |
 
 Frontend/backend overrides affect only Implementation for tasks with that target. Other stages keep their assignments.
 
@@ -174,7 +176,93 @@ maestrun run --tasks tasks/tasks.md
 
 Legacy JSON task files and fenced `maestrun-tasks` blocks remain supported. Do not mix JSON blocks and Markdown tasks in one document.
 
+Generated plans always include runnable tasks, even when requesting PRDs and technical specifications. `plan.md` contains a progress checklist such as `- [ ] task-1: Build the API`; advanced planning keeps the detailed tasks in the linked `tasks.md` and displays their checklist in `plan.md`. The runner marks `- [x]` only after all task steps and any worktree integration complete. Failed, blocked and unfinished tasks stay unchecked. The managed checklist also includes tasks added by the coordinator and does not change task definitions or decide which work to skip; `.maestrun/run.json` remains the execution record. Dry-run does not change checkboxes.
+
 ## Execution and recovery
+
+### Orchestrator mode
+
+An orchestrated run has a **Main task** that manages the other tasks. Run `maestrun init` and choose **Orchestrator** for guided setup using agent coordination. Select sequential or parallel task execution, then save the workflow. If `plan.md` exists, choose whether to reuse it. Otherwise, enter a prompt file path (`prompt.md` by default); Maestrun generates `plan.md` using the configured Planning model and project guidance. Missing or empty prompt files can be corrected in the same prompt. Existing plans are replaced only after successful generation. No tasks run during `init`; use `maestrun run` afterward. Existing workflows also offer an Orchestrator shortcut that retains their stages and models.
+
+New Orchestrator workflows configure only Planning initially. The planner defines a separate workflow for each task in `plan.md`, including custom steps for research, writing, analysis or other work. Each generated task must declare `Steps`; the final review lists those steps and their model assignments. Edit `Steps`, their order and the step instructions in the Markdown before running. Use `maestrun run --dry-run` to preview your edits. A reused older plan without steps is kept for review; add its steps before execution if there are no configured execution stages.
+
+Once the plan and assignments are valid, Maestrun also saves an `orchestration` section in `.maestrun/config.json`. It contains the strategy and task definitions, with each task's ordered `stages` recording its executor, model, effort and linked agent file. An `effort` of `null` means the executor default. This generated snapshot is refreshed after planning or reusing a ready plan, before execution/resume, and whenever the coordinator accepts a revised task plan. Parallel workers receive the same snapshot in their worktree configuration. Global stage defaults stay separate, so two tasks can use different models for the same step.
+
+The `orchestration` section records resolved assignments; edit the plan, agent files or workflow defaults to change them. It does not replace `plan.md` or the execution checkpoint in `.maestrun/run.json`, and it does not prove that a model call or test succeeded. Preview and `--dry-run` remain read-only. Incomplete or invalid plans do not replace the last valid snapshot.
+
+To choose a coordination strategy explicitly, use `maestrun init --advanced` under task execution, or configure it directly:
+
+```sh
+maestrun config execution.orchestrator plan  # Coordinate predefined tasks
+maestrun config execution.orchestrator agent # Let the Planning model coordinate
+maestrun run --dry-run
+maestrun run
+```
+
+The `plan` strategy follows the chosen task plan and completes the main task only when all managed tasks succeed. The `agent` strategy uses the configured Planning executor, model, and effort to create or revise unstarted subtasks, execute their plan, review their evidence, and add follow-up work. It starts from the tasks in `plan.md` or the file passed with `--tasks`; use a single task describing the objective when you want the agent to decompose it. Started task definitions cannot be replaced. The agent makes at most 20 coordination rounds; invalid decisions stop execution and can be retried with `maestrun run`. Coordinator calls consume executor usage.
+
+Orchestration and scheduling are independent: `execution.mode` still selects `sequential` or `parallel`, and parallel children use the existing worktree isolation and concurrency limit. The coordinator runs in the main project between task batches. Task failures and cancellation propagate to the main task. The coordinator can pause for user input using the same **Enter** / **I** answer flow as other tasks.
+
+Use optional task metadata to choose steps and create deeper branches:
+
+```md
+### Task api: Implement the API
+
+- Depends on: none
+- Steps: implementation, testing
+
+Implement and test the endpoint.
+
+### Task audit: Review the API
+
+- Depends on: api
+- Parent: api
+- Steps: review
+
+Review the endpoint against the acceptance criteria.
+```
+
+`Steps` selects a nonempty, unique list of execution stage IDs in the specified order; Planning cannot be a task step. In orchestration, you can define `custom:Your step name` directly in the plan without adding it to `config.json`. Unconfigured steps inherit Planning's executor, model and effort; configured stages keep their own assignments and instruction files. Describe each step's scope, output and acceptance criteria in the task instructions. Outside orchestration, steps must already be configured. Omitting `Steps` runs all configured execution stages, when present. `Parent` controls the tree grouping; `Depends on` controls execution ordering. Parent IDs must exist and cannot form cycles. JSON tasks use `steps` and `parentId` for the same fields. The ID `__orchestrator__` is reserved in orchestrated plans.
+
+In the navigation tree, without an explicit `Parent`, orchestrated tasks are displayed beneath their prerequisites, so a dependency chain appears across successive tree levels. Independent tasks remain under the main task. For multiple prerequisites, the tree uses the one with the longest dependency chain (ties follow dependency order); execution still waits for **all** prerequisites, including coordinated repairs. Explicit grouping is preserved, and inferred links that would create a parent cycle are skipped. This display hierarchy is rebuilt when resuming saved runs without changing task definitions or completed work.
+
+For example, a task can use `- Steps: custom:Research, custom:Write report`, while a dependent task uses only `- Steps: custom:Fact check`. Each agent executes its assigned step using the task's instructions. The coordinator can also add custom steps to follow-up tasks. Once a run has started, its source plan must remain unchanged for checkpoint recovery; make your plan edits during the final review before the first run.
+
+To use existing agent definitions, bind each step to its file with `Agents` metadata. Files may be in **any directory**, including shared folders outside the project; paths are relative to the project root or absolute, including when tasks are in linked documents. The planner and coordinator are instructed to find relevant agent files and preserve these bindings. For an existing plan, add the bindings before starting its run:
+
+```md
+### Task report: Research and write a report
+
+- Depends on: none
+- Steps: custom:Research, custom:Write report
+- Agents: {"custom:Research":".claude/agents/research.md","custom:Write report":"team/roles/writer.md"}
+
+Gather evidence, then write the report.
+```
+
+JSON tasks use `agents` with the same step-to-path mapping. An agent's Markdown YAML frontmatter can declare `model`, `executor` and `effort`. `reasoning_effort` and `model_reasoning_effort` are also accepted for effort; declare only one of these fields:
+
+```md
+---
+model: your-exact-model-id
+executor: claude
+effort: high
+---
+
+Research using primary sources and cite the evidence.
+```
+
+The file's model wins over target, stage and Planning assignments. Its instructions are passed to the assigned step, and the final review, dry run and execution report show the resolved model. If the model is omitted or `inherit`, the step keeps its workflow model. An explicit `executor` wins; otherwise recognized Claude, GPT/Codex and Grok model names select their executor, and other names retain the workflow executor. Set `executor` explicitly for providers such as Copilot that support several model families. A provider change does not inherit the previous provider's effort. Missing files or invalid model fields fail before executing that task rather than silently choosing Planning. On resume, agent files are reread for pending steps; completed steps retain their recorded models. Keep the plan's agent file bindings unchanged while resuming.
+
+Each worker receives the executor, model, effort, agent file and source project selected by Maestrun. These are the settings sent to the executor, not evidence that product checks passed. Codex sessions receive model and effort through the app-server protocol, so process arguments and session files need not expose them. The VS Code extension uses the same runtime and assignments as the CLI. In isolated worktrees, the prompt points to the original project's plan when it is absent locally.
+
+Choose steps by task scope: backend work needs backend verification; frontend integration needs frontend and end-to-end verification; documentation-only work needs documentation review. Add cross-domain tests when a concrete integration or regression risk justifies them. Do not schedule every specialist merely to report `Not applicable`. If project guidance explicitly requires a fixed sequence, update that guidance before generating a plan with task-specific steps.
+
+With **F** enabled, the orchestrator shows a dependency graph: the main task is on the **left**, and every task appears once after all its prerequisites. Arrows show every dependency, including branches, convergences and connections that skip levels. Coordinated repair tasks are included in this graph. `Parent` remains a navigation grouping; execution dependencies determine the flowchart levels. **V** switches horizontal / vertical: in vertical mode the main task is at the top and both descendants and steps flow downward. Orientation survives filters, details and live updates in the current view. **D** switches between task boxes only and detailed task containers, each containing its complete step flowchart (in the selected direction, in execution order). Every task's steps are included, not just the selected task's; step statuses, models, and automatic worktree integration remain visible. **Shift+←/→** pans horizontally; **PgUp/PgDn** scrolls vertically and **Home/End** jumps to the top/bottom. **↑/↓** selects tasks and brings them into view; **Enter** opens their results and logs (or a pending question). **F** hides the flowchart and returns to the text tree. Filters retain ancestors so matching tasks keep their context. Navigating and expanding the diagram makes no model calls.
+
+Markdown plans include a generated **Progress checklist**, updated as tasks complete. The checklist excludes the coordinator; `.maestrun/run.json` remains the execution checkpoint. Preserve the generated checklist markers when editing a plan.
+
+The source plan, generated tasks, coordination rounds, and step results are saved in `.maestrun/run.json`. Background sessions and `maestrun run` resume this state, preserving completed tasks. Keep the source plan and orchestration strategy unchanged while resuming. Generating a replacement plan is blocked while that orchestration checkpoint exists; finish the run and archive its report first, retaining worktrees needed for recovery. For a new run without orchestration, use `maestrun config execution.orchestrator null` after archiving the old report.
 
 ### Run, detach, reconnect
 
@@ -193,6 +281,8 @@ Legacy JSON task files and fenced `maestrun-tasks` blocks remain supported. Do n
 Every task runs the configured stages after Planning. Completed tasks and steps are skipped. Parallel execution uses bounded batches with a separate Git worktree for each task. Dependent tasks start only after their prerequisites are integrated.
 
 Model-reported failure/refactor gets **up to 5 automatic repair cycles per task per run**, restarting at Implementation when possible. Set `execution.maxRepairs` to change the limit; `0` disables repairs. Exhausting the limit blocks dependants; independent tasks can continue. Executor errors, invalid output, timeouts, and cancellation stop that task immediately. Repair evidence is retained in the report.
+
+In agent orchestration, a `refactor` result from a task without an earlier Implementation step returns to the coordinator immediately instead of repeating the same review. Refactor results remaining after local repairs also return to coordination. The coordinator must add new specialist tasks with `repairFor: "failing-task-id"` (Markdown: `- Repairs: failing-task-id`), including the necessary independent verification. The original task waits for its repairs before retrying; completed task definitions and evidence are preserved. Repair tasks cannot depend on their target or its dependants. Coordinated repair rounds are separately capped by `execution.maxRepairs`, and the overall 20-round coordination limit still applies. A saved QA-only refactor resumes through this same route. In parallel mode, repaired source files are merged into a fresh review worktree while retaining prior review changes; conflicts stop execution with both versions preserved.
 
 When a model needs a user decision (including a layout choice), clarification, or external action such as PR approval or login, it returns `{"status":"needs_input","question":"...","summary":"progress and context for resuming"}`. External waits can return `on_hold` with the same question/summary fields. The summary explains why work stopped; the question asks for the missing decision or confirmation that the external action is complete. Native Codex input requests also enter this flow. The task and current stage become `on_hold`; the model process closes, preserving the task files and completed stages. Waiting does not use the stage timeout or consume/reset the repair budget. Independent tasks remain eligible for execution; dependants wait for the held task to complete. Parallel execution still schedules and integrates tasks in batches, so an answered task resumes when the current batch ends and an execution slot is available.
 
@@ -240,6 +330,7 @@ Doctor checks Node/platform, executor compatibility/authentication, config/layou
 | Tab / Shift+Tab, ← / →  | Change status filter                                              |
 | Enter                   | Toggle task details                                               |
 | L (in task details)     | Toggle final results and full recorded logs for each step         |
+| V (orchestrator flow)   | Toggle horizontal / vertical orientation                          |
 | F                       | Toggle flowchart                                                  |
 | PgUp / PgDn, Home / End | Browse steps or jump to first/last                                |
 | H                       | List tasks awaiting user input                                    |
@@ -349,12 +440,16 @@ Maestrun creates `.maestrun/.gitignore` when absent. It allows only configuratio
 maestrun sample                     # Simple
 maestrun sample advanced            # Advanced
 maestrun sample advanced --background
+maestrun sample orchestrator-plan   # Predefined task coordination
+maestrun sample orchestrator-agent  # Agent-generated task coordination
 ```
 
 | Sample                                   | Tasks                                                  | Scenarios                                                                                |
 | ---------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | [Simple](../examples/simple/plan.md)     | Greeting → blank-name validation                       | Sequential implementation/tests, dependency and regression cases                         |
 | [Advanced](../examples/advanced/plan.md) | Missing input; approval on hold; add + clamp → compose | On hold confirmation, independent failure, parallel worktrees, QA repair and integration |
+
+**Orchestrator samples:** [orchestrator-plan](../examples/orchestrator-plan/plan.md) supplies six tasks and eleven worker stages; [orchestrator-agent](../examples/orchestrator-agent/plan.md) starts with one objective and targets six generated tasks, eleven worker stages and two coordination calls. Both demonstrate nested tasks and task-specific steps with sequential execution and no automatic repairs. Agent decisions can change the actual call count. Use **F** for the dependency graph, **D** for all task steps and **V** for horizontal/vertical orientation. Navigation makes no model calls.
 
 Tasks use tiny functions and direct Node.js assertions, with no installs, servers or CLI to build. Simple needs four model stages; advanced normally needs twenty-two: fifteen for add, clamp, and compose (including one intentional QA repair), plus two attempts at the missing-input task (the initial attempt and one repair), and five calls for the confirmation task (the initial hold and four stages after answering). QA and Review reuse test evidence rather than rerunning tests. QA deliberately requests a repair to the clamp implementation; the workflow returns to Implementation, repeats Tests and QA, then integrates both results and runs the dependent task. Actual duration depends on the executor/model.
 
@@ -414,15 +509,15 @@ npm run build
 npm install --global .
 ```
 
-| Command                                                                       | Purpose                                                          |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `npm run check`                                                               | Formatting, lint, and TypeScript                                 |
-| `npm test`                                                                    | Unit and integration tests with fake executors                   |
-| `npm run test:coverage`                                                       | Coverage; minimum 80% for lines, statements, functions, branches |
-| `npm run release:pack`                                                        | Checks, tests, build, and compiled `.tgz` package                |
-| `npm publish ./maestrun-maestrun-0.1.1-beta.5.tgz --access public --tag beta` | Publish a reviewed Beta package using the owner's npm account    |
+| Command                                                                  | Purpose                                                          |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `npm run check`                                                          | Formatting, lint, and TypeScript                                 |
+| `npm test`                                                               | Unit and integration tests with fake executors                   |
+| `npm run test:coverage`                                                  | Coverage; minimum 80% for lines, statements, functions, branches |
+| `npm run release:pack`                                                   | Checks, tests, build, and compiled `.tgz` package                |
+| `npm publish ./maestrun-maestrun-0.1.1.tgz --access public --tag latest` | Publish a reviewed stable package using the owner's npm account  |
 
-Packaging locally does not publish. Users can install this release with `npm install --global @maestrun/maestrun@0.1.1-beta.5` and update to the newest Beta with `npm install --global @maestrun/maestrun@beta`. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
+Packaging locally does not publish. Users install or update to the latest stable release with `npm install --global @maestrun/maestrun@latest`. [Download the latest release](https://github.com/maestrun/maestrun/releases/latest) for the packaged artifact. Installation checks Node support and Windows/WSL; startup creates the home directory if install scripts were skipped.
 
 ### Automatic npm publishing
 
@@ -430,14 +525,14 @@ Publishing a GitHub release triggers [Publish to npm](../.github/workflows/publi
 
 One-time setup: configure an [npm trusted publisher](https://docs.npmjs.com/trusted-publishers/) for `@maestrun/maestrun`, using GitHub owner `maestrun`, repository `maestrun`, and workflow filename `publish.yml`. Leave the environment field empty and allow `npm publish`. GitHub Actions authenticates through OIDC; no `NPM_TOKEN` secret is required.
 
-To publish the next Beta:
+To publish the next stable release:
 
-1. Create a topic branch and run `npm version prerelease --preid=beta --no-git-tag-version`. This updates `package.json` and `package-lock.json`; the CLI reads its version from the package.
+1. Create a topic branch and run `npm version patch --no-git-tag-version`. This updates `package.json` and `package-lock.json`; the CLI reads its version from the package.
 2. Update versioned documentation examples, run the required validation, and submit the changes through a pull request. Merge it after the required checks and review.
-3. Publish a GitHub release targeting the merged commit, with tag `v` followed by the package version, and check **Set as a pre-release**.
-4. Check the **Publish to npm** run in GitHub Actions. After success, install with `npm install --global @maestrun/maestrun@beta`.
+3. Publish a GitHub release targeting the merged commit, with tag `v` followed by the package version, and leave **Set as a pre-release** unchecked.
+4. Check the **Publish to npm** run in GitHub Actions. After success, install with `npm install --global @maestrun/maestrun@latest`.
 
-For a stable release, use a stable package version and leave **Set as a pre-release** unchecked. The default install uses `latest`, so it will not receive Beta releases. npm versions are immutable: README or screenshot updates need a new package version too. If a workflow fails before publishing, fix the cause and rerun it; do not try to overwrite an already published version.
+For a Beta release, run `npm version prerelease --preid=beta --no-git-tag-version`, publish it with **Set as a pre-release** checked, and use the npm `beta` channel explicitly. The default install uses `latest`, so it will not receive Beta releases. npm versions are immutable: README or screenshot updates need a new package version too. If a workflow fails before publishing, fix the cause and rerun it; do not try to overwrite an already published version.
 
 Source is grouped into `config`, `contracts`, `shared`, and flat capabilities under `src/modules` (workflow, planning, execution, executors, plugins, onboarding). Each capability exports through `index.ts`; external consumers use the barrel. Shared layers do not depend on capabilities. Architecture tests enforce these boundaries. Builds clear `dist` and exclude tests.
 

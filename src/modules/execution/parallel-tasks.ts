@@ -6,12 +6,14 @@ import { checkWorktreeRepository, snapshotWorktree } from "./worktree-git.js";
 import { prepareWorktree, worktreePath } from "./task-worktree.js";
 import { integrateWorktree } from "./worktree-integration.js";
 import { runTask } from "./task-runner.js";
+import { refreshRepairWorktree } from "./worktree-refresh.js";
 
 async function isolatedTask(context: RunContext, task: Task, base: string): Promise<void> {
   const state = context.report.tasks.find((entry) => entry.id === task.id);
   if (!state) throw new Error("Missing task state");
   try {
     if (context.signal.aborted) throw new CancelError();
+    await refreshRepairWorktree(context, state, base);
     const path = await prepareWorktree(context, state, base);
     await runTask({ ...context, cwd: path, projectCwd: context.cwd }, task);
   } catch (error) {

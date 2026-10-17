@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import type { RunReport } from "../../contracts/run.js";
-import { FILTERS, selectedIndex, visibleTasks } from "./run-view-state.js";
+import { FILTERS, selectedIndex, visibleTasks, matchingTasks } from "./run-view-state.js";
 import type { ViewState } from "./run-view-state.js";
 import { cell } from "../../shared/terminal-text.js";
 import { stage } from "./run-task-view.js";
@@ -23,7 +23,7 @@ function progress(report: RunReport, now: number): string {
 }
 
 function tabs(report: RunReport, state: ViewState, width: number): string {
-  const labels = FILTERS.map((name, i) => `${name} ${visibleTasks(report, i).length}`);
+  const labels = FILTERS.map((name, i) => `${name} ${matchingTasks(report, i).length}`);
   if (labels.join("   ").length + 2 > width)
     return chalk.bold.underline(cell(`  ${labels[state.filter]}  · Tab to filter`, width));
   return `  ${labels.map((text, i) => (i === state.filter ? chalk.bold.underline(text) : chalk.dim(text))).join("   ")}`;
@@ -35,7 +35,14 @@ export function renderRunScreen(report: RunReport, state: ViewState, screen: Scr
   if (width < 32 || height < 12) return cell(`Maestrun ${progress(report, screen.now)}`, width);
   const rule = chalk.dim("─".repeat(width));
   const lines = [
-    chalk.bold(cell("  Maestrun · task command center", width)),
+    chalk.bold(
+      cell(
+        report.orchestration
+          ? `  Maestrun · orchestrator (${report.orchestration.strategy})`
+          : "  Maestrun · task command center",
+        width,
+      ),
+    ),
     tabs(report, state, width),
     rule,
     inputNotice(report, screen.cwd, width),
@@ -73,7 +80,12 @@ function footer(report: RunReport, state: ViewState, width: number): string[] {
       width,
     ),
     chalk.dim(
-      cell(shortcuts(state, Boolean(report.finishedAt), selected?.status === "on_hold"), width),
+      cell(
+        report.orchestration && !state.details
+          ? `  ${report.finishedAt ? "Esc close" : "Ctrl+C"} · F flow · D steps · V direction · Shift+←/→ pan · ↑/↓ · Enter open/reply`
+          : shortcuts(state, Boolean(report.finishedAt), selected?.status === "on_hold"),
+        width,
+      ),
     ),
   ];
 }

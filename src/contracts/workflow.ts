@@ -20,13 +20,14 @@ export type ExecutorId = (typeof EXECUTORS)[number];
 export type Effort = (typeof EFFORTS)[number];
 export type Assignment = Readonly<{ executor: ExecutorId; model: string; effort?: Effort }>;
 export type StepPreset = Readonly<{ name: string }> & Partial<Assignment>;
-export type Stage = Assignment & Readonly<{ id: StageId; file?: string }>;
+export type Stage = Assignment & Readonly<{ id: StageId; file?: string; agent?: string }>;
 export type Targets = Readonly<{ frontend: Assignment; backend: Assignment }>;
 export type Execution = Readonly<{
   mode: "sequential" | "parallel";
   concurrency: number;
   maxRepairs?: number;
   background?: boolean;
+  orchestrator?: "plan" | "agent";
 }>;
 export type Config = Readonly<{
   version: 1;
@@ -38,7 +39,11 @@ export type Config = Readonly<{
 }>;
 export type Requirements = Readonly<{ text: string; source: string }>;
 export type StepFile = Readonly<{ id: StageId; path: string; content?: string }>;
-export type Setup = Readonly<{ config: Config; files?: readonly StepFile[] }>;
+export type Setup = Readonly<{
+  config: Config;
+  files?: readonly StepFile[];
+  prepareOrchestratorPlan?: boolean;
+}>;
 export type GuidanceFile = Readonly<{ path: string; content: string }>;
 export type Guidance = Readonly<{
   skills: readonly GuidanceFile[];

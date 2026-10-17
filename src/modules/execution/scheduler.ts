@@ -7,6 +7,7 @@ import { runIsolatedTasks } from "./parallel-tasks.js";
 import { runTask } from "./task-runner.js";
 import { setTimeout } from "node:timers/promises";
 import { receiveTaskAnswers } from "./task-input.repository.js";
+import { taskDependencies } from "./task-dependencies.js";
 
 async function blockRemaining(context: RunContext, pending: readonly Task[]): Promise<void> {
   for (const task of pending) {
@@ -49,6 +50,7 @@ export function initialTaskState(config: RunContext["config"], task: Task): Task
   return {
     id: task.id,
     title: task.title,
+    ...(task.parentId ? { parentId: task.parentId } : {}),
     status: "pending",
     ...(config.execution?.mode === "parallel" ? { integration: "pending" as const } : {}),
     completedSteps: 0,
@@ -69,8 +71,9 @@ function readyTasks(context: RunContext, pending: readonly Task[]): Task[] {
   );
   return pending.filter(
     (task) =>
-      task.dependsOn.every((id) => done.has(id)) &&
-      context.report.tasks.find((state) => state.id === task.id)?.status !== "on_hold",
+      taskDependencies(context.report.orchestration?.tasks ?? pending, task).every((id) =>
+        done.has(id),
+      ) && context.report.tasks.find((state) => state.id === task.id)?.status !== "on_hold",
   );
 }
 

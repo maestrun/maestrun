@@ -32,7 +32,7 @@ function restoreProperty(target: object, name: string, descriptor?: PropertyDesc
 beforeEach(() => {
   vi.resetModules();
   mock.initialize.mockReset();
-  mock.initialize.mockResolvedValue();
+  mock.initialize.mockResolvedValue({ config: { version: 1, stages: [] } });
   mock.createPlan.mockReset();
   mock.createPlan.mockResolvedValue();
   vi.spyOn(console, "log").mockImplementation(() => {});

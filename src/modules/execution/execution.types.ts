@@ -5,6 +5,7 @@ import type { StepInput, TaskState, RunReport } from "../../contracts/run.js";
 export type RunContext = CommandInput &
   Readonly<{
     config: Config;
+    tasksPath?: string;
     projectCwd?: string;
     report: RunReport;
     providers?: Readonly<Record<string, string>>;

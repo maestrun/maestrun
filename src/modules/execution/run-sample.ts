@@ -8,7 +8,7 @@ import { ensureStateDirectory } from "../../shared/project-state.js";
 import { CancelError, UserError } from "../../shared/errors.js";
 import { selectSampleAssignment } from "../workflow/index.js";
 import { runSession } from "./run-session.js";
-import { initializeSampleGit, type SampleMode } from "./sample-project.js";
+import { initializeSampleGit, SAMPLE_DESCRIPTIONS, type SampleMode } from "./sample-project.js";
 
 function sampleConfig(
   config: Config | undefined,
@@ -17,9 +17,14 @@ function sampleConfig(
 ): Config {
   const planning = assignment ?? config?.stages[0];
   if (!planning) throw new UserError("No planning assignment was found.", "Run maestrun init.");
+  const orchestrator =
+    mode === "orchestrator-plan" ? "plan" : mode === "orchestrator-agent" ? "agent" : undefined;
   return {
     version: 1,
-    stages: (mode === "simple" ? DEFAULT_STAGES : STAGES).map((id) => {
+    stages: (mode === "simple"
+      ? DEFAULT_STAGES
+      : STAGES.filter((id) => !orchestrator || id !== "qa")
+    ).map((id) => {
       const { executor, model, effort } =
         assignment ?? config?.stages.find((stage) => stage.id === id) ?? planning;
       return { id, executor, model, ...(effort ? { effort } : {}) };
@@ -28,7 +33,8 @@ function sampleConfig(
       mode: mode === "advanced" ? "parallel" : "sequential",
       concurrency: mode === "advanced" ? 2 : 1,
       background: false,
-      maxRepairs: mode === "simple" ? 0 : 1,
+      maxRepairs: mode === "simple" || orchestrator ? 0 : 1,
+      ...(orchestrator ? { orchestrator } : {}),
     },
     ...(config?.timeoutMs !== undefined ? { timeoutMs: config.timeoutMs } : {}),
   };
@@ -68,13 +74,7 @@ export async function runSample(
   const directory = await prepareSample(input.cwd, assignment, input.mode);
   if (input.signal.aborted) throw new CancelError();
   console.log(`Sample project: ${directory}`);
-  console.log(
-    input.mode === "simple"
-      ? "Simple: 2 small sequential tasks — greeting, then blank-name validation. Implementation → Tests."
-      : input.mode === "advanced"
-        ? "Advanced: 5 small tasks — an approval on hold, an independent failure, add, clamp with QA repair, then compose."
-        : "QA repair: 3 small tasks — add, clamp with QA repair, then compose their results.",
-  );
+  console.log(SAMPLE_DESCRIPTIONS[input.mode ?? "qa-refactor"]);
   if (input.mode === "advanced")
     console.log(
       "Expected: missing input fails after one repair; answer the simulated approval with continue (H → I); the other four tasks finish, including QA repair and integration. The final run status is failed (exit 1).",
