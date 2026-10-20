@@ -2,23 +2,15 @@ import { Command } from "commander";
 import { VERSION } from "./shared/version.js";
 import { createPlan } from "./modules/planning/index.js";
 import { initializeFromTemplate } from "./modules/workflow/index.js";
-import { runWorkflow, runSession, showRun } from "./modules/execution/index.js";
+import { runSession } from "./modules/execution/index.js";
+import { registerRun } from "./run-command.js";
 import { exportPlugin } from "./modules/plugins/index.js";
 import { registerSample } from "./sample-command.js";
 import { registerTemplate } from "./template-command.js";
 import { registerOnboarding, registerStart } from "./onboarding-command.js";
 import { doctor, initializeProject } from "./modules/onboarding/index.js";
-import { runWithRecovery } from "./modules/onboarding/index.js";
 import { interactive } from "./cli.js";
 import { configure, CONFIG_HELP } from "./config/index.js";
-
-type RunOptions = {
-  tasks: string;
-  dryRun?: boolean;
-  status?: boolean;
-  background?: boolean;
-  trustPlugins?: boolean;
-};
 
 async function initCommand(options: { template?: boolean; advanced?: boolean }): Promise<void> {
   await interactive(
@@ -34,50 +26,6 @@ async function planCommand(options: { interactive?: boolean }): Promise<void> {
     await doctor(input, true);
     await createPlan({ ...input, ...options });
   });
-}
-
-async function runCommand(options: RunOptions): Promise<void> {
-  if (options.status) return showRun(process.cwd());
-  if (!options.dryRun) {
-    await interactive(
-      "run",
-      (input) =>
-        runWithRecovery({
-          ...input,
-          tasksPath: options.tasks,
-          trustPlugins: options.trustPlugins ?? false,
-          ...(options.background !== undefined ? { background: options.background } : {}),
-        }),
-      false,
-    );
-    return;
-  }
-  await interactive(
-    "run",
-    (input) =>
-      runWorkflow({
-        ...input,
-        tasksPath: options.tasks,
-        ...(options.dryRun ? { dryRun: true } : {}),
-      }),
-    false,
-  );
-}
-
-function registerRun(program: Command): void {
-  program
-    .command("run")
-    .description("Execute planned tasks and report stage, model, progress and errors")
-    .option("--tasks <file>", "Markdown tasks or plan (legacy JSON supported)", "plan.md")
-    .option("--dry-run", "Validate and preview tasks without executing or loading plugins")
-    .option(
-      "--trust-plugins",
-      "Allow configured plugins and their dependencies full process access for this run",
-    )
-    .option("--status", "Print the last persisted run report as JSON")
-    .option("--background", "Start or leave task execution in the background")
-    .option("--no-background", "Watch execution, overriding the saved background preference")
-    .action(runCommand);
 }
 
 function registerSetup(program: Command): void {

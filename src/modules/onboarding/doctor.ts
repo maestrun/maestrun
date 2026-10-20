@@ -6,7 +6,7 @@ import type { CommandInput } from "../../shared/command.types.js";
 import { isCancellation, UserError } from "../../shared/errors.js";
 import { cleanText } from "../../shared/terminal-text.js";
 import { detectExecutors } from "../executors/index.js";
-import { checkWorktreeRepository } from "../execution/index.js";
+import { checkWorkspaceRepositories } from "../execution/index.js";
 import { diagnoseFiles, diagnoseLocks } from "./diagnostic-files.js";
 import type { Diagnostic } from "./diagnostic-files.js";
 
@@ -62,7 +62,8 @@ async function projectChecks(cwd: string, checks: Diagnostic[]): Promise<Config 
       ...(!config ? { nextAction: "Run maestrun init or maestrun start." } : {}),
     });
     loadLayout(cwd);
-    if (config?.execution?.mode === "parallel") await checkWorktreeRepository(cwd);
+    if (config?.execution?.mode === "parallel")
+      await checkWorkspaceRepositories(cwd, config.execution?.repositories);
     if (config) checks.push(...(await diagnoseFiles(cwd, config)));
     checks.push(...(await diagnoseLocks(cwd)));
   } catch (error) {

@@ -2,39 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { TaskState, TaskWorktree } from "../../contracts/run.js";
-import { isRecord } from "../../contracts/workflow.js";
 import type { RunContext } from "./execution.types.js";
 import { UserError } from "../../shared/errors.js";
 import { ensureHomeDirectory, maestrunHome } from "../../shared/home.js";
 import { commonGitDirectory, gitCommand, gitOutput } from "./worktree-git.js";
+import { validWorktree } from "./worktree-validation.js";
+export { validWorktree } from "./worktree-validation.js";
 import { copyWorktreeSettings } from "./worktree-settings.js";
-
-const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u;
-const OID = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u;
-
-function validLocation(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    UUID.test(value.id) &&
-    typeof value.base === "string" &&
-    OID.test(value.base)
-  );
-}
-
-export function validWorktree(value: unknown): boolean {
-  return (
-    value === undefined ||
-    (isRecord(value) &&
-      validLocation(value) &&
-      (value.result === undefined ||
-        (typeof value.result === "string" && OID.test(value.result))) &&
-      (value.integrated === undefined || typeof value.integrated === "boolean") &&
-      (value.resolving === undefined || typeof value.resolving === "boolean") &&
-      (value.retained === undefined ||
-        (Array.isArray(value.retained) && value.retained.every(validLocation))))
-  );
-}
 
 export function worktreePath(cwd: string, worktree: TaskWorktree): string {
   if (!validWorktree(worktree))
@@ -42,6 +16,16 @@ export function worktreePath(cwd: string, worktree: TaskWorktree): string {
       "Invalid saved task worktree.",
       "Restore the original .maestrun/run.json before retrying.",
     );
+  if (worktree.workspace) {
+    const root = resolve(cwd, ...worktree.workspace.path.split("/").map(() => ".."));
+    return join(
+      maestrunHome(),
+      "worktrees",
+      projectId(root),
+      worktree.workspace.id,
+      worktree.workspace.path,
+    );
+  }
   return join(maestrunHome(), "worktrees", projectId(cwd), worktree.id);
 }
 
@@ -107,10 +91,14 @@ export async function requireResolvedWorktree(path: string): Promise<void> {
 }
 
 export function uniqueWorktrees(tasks: readonly TaskState[]): boolean {
-  const ids = tasks.flatMap((task) =>
-    task.worktree
-      ? [task.worktree.id, ...(task.worktree.retained ?? []).map((entry) => entry.id)]
-      : [],
-  );
+  const ids = tasks.flatMap((task) => (task.worktree ? worktreeIds(task.worktree) : []));
   return new Set(ids).size === ids.length;
+}
+
+function worktreeIds(worktree: TaskWorktree): string[] {
+  return [
+    worktree.id,
+    ...(worktree.retained ?? []).map((entry) => entry.id),
+    ...(worktree.repositories ?? []).flatMap((entry) => worktreeIds(entry.worktree)),
+  ];
 }

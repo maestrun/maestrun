@@ -1,3 +1,4 @@
+import { validRepositorySelection } from "../contracts/workspace.js";
 import { isRecord } from "../contracts/workflow.js";
 import type { Config, Execution } from "../contracts/workflow.js";
 import { UserError } from "../shared/errors.js";
@@ -25,6 +26,7 @@ function execution(value: unknown): Execution {
   return {
     mode,
     concurrency,
+    ...(value.repositories === undefined ? {} : { repositories: repositories(value.repositories) }),
     ...(typeof value.maxRepairs === "number" ? { maxRepairs: value.maxRepairs } : {}),
     ...(typeof value.background === "boolean" ? { background: value.background } : {}),
     ...(value.orchestrator === "plan" || value.orchestrator === "agent"
@@ -79,4 +81,12 @@ function validateExecutionOptions(value: Record<string, unknown>): void {
       value.maxRepairs > 100)
   )
     return invalid("execution.maxRepairs (integer 0–100)");
+}
+
+function repositories(value: unknown): readonly string[] {
+  if (!validRepositorySelection(value))
+    return invalid(
+      "execution.repositories (nonempty, unique, non-overlapping relative repository paths)",
+    );
+  return value;
 }

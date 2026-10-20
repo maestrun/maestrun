@@ -25,6 +25,7 @@ export type Targets = Readonly<{ frontend: Assignment; backend: Assignment }>;
 export type Execution = Readonly<{
   mode: "sequential" | "parallel";
   concurrency: number;
+  repositories?: readonly string[];
   maxRepairs?: number;
   background?: boolean;
   orchestrator?: "plan" | "agent";

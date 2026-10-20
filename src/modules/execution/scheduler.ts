@@ -24,15 +24,21 @@ async function blockRemaining(context: RunContext, pending: readonly Task[]): Pr
 export async function schedule(context: RunContext, tasks: readonly Task[]): Promise<void> {
   let pending = tasks.filter(
     (task) =>
+      (!context.selectedTaskIds || context.selectedTaskIds.includes(task.id)) &&
       !context.report.tasks.some((state) => state.id === task.id && state.status === "completed"),
   );
   const limit =
     context.config.execution?.mode === "parallel" ? context.config.execution.concurrency : 1;
   while (pending.length && !context.signal.aborted) {
     await receiveTaskAnswers(context);
-    const ready = readyTasks(context, pending).slice(0, limit);
+    const ready = readyTasks(context, pending, tasks).slice(0, limit);
     if (!ready.length) {
-      if (!context.report.tasks.some((task) => task.status === "on_hold")) break;
+      if (
+        !pending.some((task) =>
+          context.report.tasks.some((state) => state.id === task.id && state.status === "on_hold"),
+        )
+      )
+        break;
       await setTimeout(100);
       continue;
     }
@@ -65,13 +71,13 @@ export function initialTaskState(config: RunContext["config"], task: Task): Task
   };
 }
 
-function readyTasks(context: RunContext, pending: readonly Task[]): Task[] {
+function readyTasks(context: RunContext, pending: readonly Task[], tasks: readonly Task[]): Task[] {
   const done = new Set(
     context.report.tasks.filter((task) => task.status === "completed").map((task) => task.id),
   );
   return pending.filter(
     (task) =>
-      taskDependencies(context.report.orchestration?.tasks ?? pending, task).every((id) =>
+      taskDependencies(context.report.orchestration?.tasks ?? tasks, task).every((id) =>
         done.has(id),
       ) && context.report.tasks.find((state) => state.id === task.id)?.status !== "on_hold",
   );

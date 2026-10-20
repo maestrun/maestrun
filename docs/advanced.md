@@ -49,7 +49,7 @@ Changes save immediately. Paths accept spaces or dots, stage IDs or zero-based i
 | `execution.maxRepairs`   | 5 repair cycles per task per run; integer 0–100; 0 disables repairs                   |
 | `execution.background`   | `false`                                                                               |
 | `timeoutMs`              | 600000; range 1000–86400000, per executor invocation                                  |
-| Stage `effort`           | Executor default when unset                                                           |
+| Stage `effort`           | Planning default in orchestration; otherwise executor default when unset              |
 | `targets`                | Optional; requires both frontend and backend assignments                              |
 | `plugins`                | Empty; project-relative `./…mjs` or `./…js` modules                                   |
 
@@ -182,7 +182,7 @@ Generated plans always include runnable tasks, even when requesting PRDs and tec
 
 ### Orchestrator mode
 
-An orchestrated run has a **Main task** that manages the other tasks. Run `maestrun init` and choose **Orchestrator** for guided setup using agent coordination. Select sequential or parallel task execution, then save the workflow. If `plan.md` exists, choose whether to reuse it. Otherwise, enter a prompt file path (`prompt.md` by default); Maestrun generates `plan.md` using the configured Planning model and project guidance. Missing or empty prompt files can be corrected in the same prompt. Existing plans are replaced only after successful generation. No tasks run during `init`; use `maestrun run` afterward. Existing workflows also offer an Orchestrator shortcut that retains their stages and models.
+An orchestrated run has a **Main task** that manages the other tasks. Run `maestrun init` and choose **Orchestrator** for guided setup using agent coordination. Select the default reasoning effort, then sequential or parallel task execution and save the workflow. The default is stored as Planning's effort; change it later with `maestrun config stages planning effort high`. Agents and task stages without an effort inherit this default when supported by their executor. Explicit agent effort takes priority over stage or target effort, followed by the Planning default. If `plan.md` exists, choose whether to reuse it. Otherwise, enter a prompt file path (`prompt.md` by default); Maestrun generates `plan.md` using the configured Planning model and project guidance. Missing or empty prompt files can be corrected in the same prompt. Existing plans are replaced only after successful generation. No tasks run during `init`; use `maestrun run` afterward. Existing workflows also offer an Orchestrator shortcut that retains their stages and models.
 
 New Orchestrator workflows configure only Planning initially. The planner defines a separate workflow for each task in `plan.md`, including custom steps for research, writing, analysis or other work. Each generated task must declare `Steps`; the final review lists those steps and their model assignments. Edit `Steps`, their order and the step instructions in the Markdown before running. Use `maestrun run --dry-run` to preview your edits. A reused older plan without steps is kept for review; add its steps before execution if there are no configured execution stages.
 
@@ -252,7 +252,7 @@ effort: high
 Research using primary sources and cite the evidence.
 ```
 
-The file's model wins over target, stage and Planning assignments. Its instructions are passed to the assigned step, and the final review, dry run and execution report show the resolved model. If the model is omitted or `inherit`, the step keeps its workflow model. An explicit `executor` wins; otherwise recognized Claude, GPT/Codex and Grok model names select their executor, and other names retain the workflow executor. Set `executor` explicitly for providers such as Copilot that support several model families. A provider change does not inherit the previous provider's effort. Missing files or invalid model fields fail before executing that task rather than silently choosing Planning. On resume, agent files are reread for pending steps; completed steps retain their recorded models. Keep the plan's agent file bindings unchanged while resuming.
+The file's model wins over target, stage and Planning assignments. Its instructions are passed to the assigned step, and the final review, dry run and execution report show the resolved model. If the model is omitted or `inherit`, the step keeps its workflow model. An explicit `executor` wins; otherwise recognized Claude, GPT/Codex and Grok model names select their executor, and other names retain the workflow executor. Set `executor` explicitly for providers such as Copilot that support several model families. A provider change inherits effort only when the selected executor supports that level; an explicit agent effort overrides the inherited value. Missing files or invalid model fields fail before executing that task rather than silently choosing Planning. On resume, agent files are reread for pending steps; completed steps retain their recorded models. Keep the plan's agent file bindings unchanged while resuming.
 
 Each worker receives the executor, model, effort, agent file and source project selected by Maestrun. These are the settings sent to the executor, not evidence that product checks passed. Codex sessions receive model and effort through the app-server protocol, so process arguments and session files need not expose them. The VS Code extension uses the same runtime and assignments as the CLI. In isolated worktrees, the prompt points to the original project's plan when it is absent locally.
 
@@ -292,9 +292,36 @@ Background and noninteractive runs remain alive while input is pending. Their re
 
 Executors can edit the workspace and run checks; prompts prohibit commits, pushes, and deployment. Success is the executor's reported result. Local server checks should start the server and test it in the same shell command, especially under Linux/WSL sandboxing.
 
+### Select tasks for one run
+
+In an interactive terminal, `maestrun run` defaults to **All**, which runs or resumes all unfinished tasks. Choose **Choose tasks for this run** to open the task list: use **↑ / ↓** to navigate, **Space** to toggle tasks, and **Enter** to run the selection. Completed tasks remain visible in gray with **(completed)** and cannot be selected again. **Esc** returns to the All/Choose menu; cancellation starts no tasks.
+
+The selection applies only to this invocation. Unselected tasks keep their saved progress and remain available next time; they are not marked complete or removed from the plan. The next interactive run defaults to **All** again. An unfinished prerequisite must be selected too, or completed in an earlier run; Maestrun explains missing dependencies before starting any work.
+
+For scripts or explicit selections:
+
+```sh
+maestrun run --only task-a,task-c
+maestrun run --skip task-c
+maestrun run --only task-a --dry-run
+```
+
+Noninteractive runs default to all tasks unless `--only` or `--skip` is supplied. Background workers receive the same selection. When reconnecting to an active worker, its existing selection stays in effect. In orchestrator mode, a selected run executes only the chosen existing tasks; it does not ask the coordinator to generate extra work. Run **All** afterward to resume coordination and finish the overall objective. The VS Code extension offers the same All/Choose flow from **Run / resume**.
+
 ### Parallel worktrees
 
-Parallel mode requires **Git 2.38+**, an initial commit, and execution from the repository root. Unresolved merges and submodules must use sequential mode. `doctor` and dry-run check these prerequisites.
+Parallel mode requires **Git 2.38+** and an initial commit in each repository. Start from a repository root, or from a folder without Git that contains repositories in its subdirectories. `doctor` and dry-run discover and validate those repositories. Discovery stops at each repository root and skips symbolic links, hidden directories, and dependency/build directories (`node_modules`, `vendor`, `dist`, `build`, `coverage`). Inaccessible directories and empty `.git` placeholders are skipped during discovery. The first interactive run from a parent workspace asks which repositories belong to this project and saves the selection in `execution.repositories`. The CLI and VS Code use the same selection; unselected repositories are not validated or given worktrees. Unresolved merges and submodules must use sequential mode.
+
+For noninteractive runs, set the repository scope first. Paths are relative to the project folder, must not overlap, and cannot be configured globally:
+
+```sh
+maestrun config execution.repositories '["api", "apps/web"]'
+maestrun config execution.repositories null # ask again on the next interactive run
+```
+
+For a folder containing multiple repositories, each parallel task gets its own isolated workspace with a Git worktree at each original relative path (for example, `api/` and `apps/web/`). Agents can work across these repositories with the configured concurrency. No Git repository is created in the parent folder. Readable files at the workspace root and along the selected repositories’ parent directories are copied as read-only context. Other directories are excluded; inaccessible source files and directories, such as database volumes owned by another user, are skipped without changing their permissions. Only changes inside the repositories are integrated automatically. Changes outside them stop integration and remain available for manual recovery. Repository branches and staging indexes stay unchanged.
+
+All repository merges for a task are prepared before applying any patches, so a merge conflict preserves the entire task for resolution and retry. Patch application across repositories is not a single transaction: interruption or an external filesystem change during application can leave some repositories integrated. Per-repository checkpoints preserve that progress; retry skips those integrations. Keep the repository layout and saved worktrees until recovery completes.
 
 - Each task gets a snapshot of tracked and nonignored files, including uncommitted changes. Runtime state is excluded; configuration and step instructions are copied separately.
 - Worktrees live under `~/.maestrun/worktrees/<project-id>/`. Ignored dependencies and environment files are not copied; install dependencies inside each worktree.

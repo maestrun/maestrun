@@ -72,6 +72,7 @@ function chooseFiles(signal: AbortSignal): Pick<Ui, "checkbox"> {
               message,
               choices: choices.map((choice) => ({
                 ...choice,
+                ...(choice.disabled ? { disabled: `(${choice.disabled})` } : {}),
                 checked: selected.includes(choice.value),
               })),
               required: false,

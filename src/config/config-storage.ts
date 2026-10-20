@@ -27,6 +27,11 @@ export function validateConfigDocument(value: ConfigDocument, global = false): v
       "stepPresets is a global setting.",
       "Use maestrun config global stepPresets.",
     );
+  if (global && isRecord(value.execution) && value.execution.repositories !== undefined)
+    throw new UserError(
+      "Repository selection is project-specific.",
+      "Set execution.repositories in the project configuration.",
+    );
   parseStepPresets(value.stepPresets);
   if (!global || value.stages !== undefined) {
     parseConfig(value);

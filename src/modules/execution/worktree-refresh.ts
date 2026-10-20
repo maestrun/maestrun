@@ -3,7 +3,7 @@ import type { TaskState, TaskWorktree } from "../../contracts/run.js";
 import type { RunContext } from "./execution.types.js";
 import { UserError } from "../../shared/errors.js";
 import { gitCommand, gitOutput, snapshotWorktree } from "./worktree-git.js";
-import { preserveConflict } from "./worktree-conflict.js";
+import { preserveConflict, retainedWorktrees } from "./worktree-conflict.js";
 import { verifyWorktree, worktreePath } from "./task-worktree.js";
 
 export async function refreshRepairWorktree(
@@ -55,7 +55,7 @@ async function installRefreshedWorktree(
   const recovery: TaskWorktree = {
     id: randomUUID(),
     base: current,
-    retained: [...(previous.retained ?? []), { id: previous.id, base: previous.base }],
+    retained: retainedWorktrees(previous),
   };
   const path = worktreePath(context.cwd, recovery);
   await gitOutput(context.cwd, ["worktree", "add", "--detach", path, current]);

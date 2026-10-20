@@ -1,3 +1,4 @@
+import type { TaskSelection } from "./task-selection.js";
 import { setTimeout } from "node:timers/promises";
 import { terminalUi } from "../../shared/terminal.js";
 import { CancelError, UserError } from "../../shared/errors.js";
@@ -15,7 +16,7 @@ import type { SessionView } from "./execution.types.js";
 import { detachSession, sessionInterrupts } from "./run-session-interrupt.js";
 import { loadConfig } from "../../config/index.js";
 
-type RunSessionInput = {
+type RunSessionInput = TaskSelection & {
   cwd: string;
   tasksPath?: string;
   background?: boolean;
@@ -29,8 +30,7 @@ export async function runSession(input: RunSessionInput): Promise<boolean> {
   const background =
     input.background ?? (!previous && (await loadConfig(input.cwd)).config?.execution?.background);
   const session =
-    previous ??
-    (await startRunSession(input.cwd, input.tasksPath ?? "plan.md", input.trustPlugins));
+    previous ?? (await startRunSession(input.cwd, input.tasksPath ?? "plan.md", input));
   const state: SessionView = {
     cwd: input.cwd,
     session,
@@ -88,7 +88,11 @@ function finishSession(state: SessionView): void {
       state.session.error ?? "Execution failed.",
       state.session.nextAction ?? "Run maestrun run --status.",
     );
-  const total = state.report?.tasks.length ?? 0;
+  const tasks =
+    state.report?.tasks.filter(
+      (task) => !state.report?.selectedTaskIds || state.report.selectedTaskIds.includes(task.id),
+    ) ?? [];
+  const total = tasks.length;
   state.ui.log("Run report saved: .maestrun/run.json");
   state.ui.log(`Completed ${total}/${total} tasks.`);
 }

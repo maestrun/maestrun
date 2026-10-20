@@ -3,7 +3,11 @@ import { loadConfig } from "../../config/index.js";
 import { snapshotFile } from "../../shared/atomic.js";
 import type { CommandInput } from "../../shared/command.types.js";
 import { CancelError, UserError } from "../../shared/errors.js";
-import { resumableSession } from "../execution/index.js";
+import {
+  chooseRunTasks,
+  chooseWorkspaceRepositories,
+  resumableSession,
+} from "../execution/index.js";
 import { runWithRecovery } from "./run-recovery.js";
 import { runWorkflow } from "../execution/index.js";
 import { createPlan } from "../planning/index.js";
@@ -43,9 +47,11 @@ export async function start(input: StartInput, services = SERVICES): Promise<voi
     await services.run(input);
     return;
   }
+  if (process.stdin.isTTY && process.stdout.isTTY) await chooseWorkspaceRepositories(input);
   await timed(input, "Environment checks", () => services.doctor(input, true));
   if (!(await loadConfig(input.cwd)).config) {
     await timed(input, "Configuration", () => services.initialize({ ...input, quick: true }));
+    if (process.stdin.isTTY && process.stdout.isTTY) await chooseWorkspaceRepositories(input);
     await services.doctor(input, true);
   } else input.ui.log("Reusing saved workflow.");
   const tasksPath = input.tasksPath ?? "plan.md";
@@ -60,5 +66,11 @@ export async function start(input: StartInput, services = SERVICES): Promise<voi
   if (input.signal.aborted) throw new CancelError();
   await services.validate({ ...input, tasksPath, dryRun: true });
   if (!(await input.ui.confirm("Start or resume task execution?", true))) return;
-  await services.run({ ...input, tasksPath });
+  await runSelected({ ...input, tasksPath }, services);
+}
+
+async function runSelected(input: StartInput, services: typeof SERVICES): Promise<void> {
+  const only =
+    process.stdin.isTTY && process.stdout.isTTY ? await chooseRunTasks(input) : undefined;
+  await services.run({ ...input, ...(only ? { only } : {}) });
 }

@@ -6,7 +6,9 @@ export type RunContext = CommandInput &
   Readonly<{
     config: Config;
     tasksPath?: string;
+    selectedTaskIds?: readonly string[];
     projectCwd?: string;
+    repositoryPaths?: readonly string[];
     report: RunReport;
     providers?: Readonly<Record<string, string>>;
     execute: (input: StepInput) => Promise<string>;

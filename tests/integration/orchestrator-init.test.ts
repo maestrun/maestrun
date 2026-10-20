@@ -14,7 +14,7 @@ const PLAN =
   "## Tasks\n\n### Task greeting: Create a greeting\n\n- Depends on: none\n- Steps: implementation, testing\n\nImplement and test a greeting.\n";
 
 function input(cwd: string, answers: Parameters<typeof scriptedUi>[0]) {
-  const script = scriptedUi(["codex", "codex-test", "orchestrator", ...answers]);
+  const script = scriptedUi(["codex", "codex-test", "orchestrator", "high", ...answers]);
   return { cwd, quick: true, signal: new AbortController().signal, ui: script.ui, script };
 }
 
@@ -33,12 +33,14 @@ test.for(["sequential", "parallel"])(
     expect((await loadConfig(project.cwd)).config?.stages.map((stage) => stage.id)).toEqual([
       "planning",
     ]);
+    expect((await loadConfig(project.cwd)).config?.stages[0]?.effort).toBe("high");
     expect(await readFile(join(project.cwd, "plan.md"), "utf8")).toBe(PLAN);
     expect((await snapshotFile(project.log)).exists).toBe(false);
     expect(context.script.calls.map((call) => call.message)).toEqual([
       "Executor",
       "Codex model (type to search)",
       "Workflow",
+      "Default orchestrator effort (agents can override)",
       "Managed task execution",
       "Save this workflow?",
       "Use the existing plan.md?",
@@ -122,7 +124,7 @@ test("existing workflows offer orchestration and retain stages, models and other
   };
   await saveConfig(project.cwd, config, { exists: false, content: "" });
   await writeFile(join(project.cwd, "plan.md"), PLAN);
-  const script = scriptedUi(["orchestrator", "parallel", true, true]);
+  const script = scriptedUi(["orchestrator", "", "parallel", true, true]);
   await initializeProject({
     cwd: project.cwd,
     quick: true,

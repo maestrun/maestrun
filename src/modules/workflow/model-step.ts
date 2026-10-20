@@ -6,7 +6,7 @@ import { isClaudeAlias } from "../executors/index.js";
 import type { Choice } from "../../shared/ui.types.js";
 import type { WizardContext } from "./wizard.types.js";
 
-async function availableModels(
+export async function availableModels(
   context: WizardContext,
   executor: ExecutorId,
 ): Promise<readonly Model[]> {

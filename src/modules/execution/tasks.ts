@@ -1,7 +1,7 @@
 import { parseTasks, invalidTasks } from "./task-validation.js";
 export { parseTasks } from "./task-validation.js";
 import type { Task } from "../../contracts/tasks.js";
-import { isStage } from "../../contracts/workflow.js";
+import { isStage, validEffort } from "../../contracts/workflow.js";
 import type { Config, Stage, StageId } from "../../contracts/workflow.js";
 import { UserError } from "../../shared/errors.js";
 import { readRequirements } from "../../shared/requirements.js";
@@ -77,7 +77,11 @@ export function taskStages(config: Config, task: Task): readonly Stage[] {
       stage.id === "implementation" && task.target
         ? (config.targets?.[task.target] ?? stage)
         : stage;
-    return { id: stage.id, ...assignment, ...(stage.file ? { file: stage.file } : {}) };
+    return defaultTaskEffort(config, {
+      id: stage.id,
+      ...assignment,
+      ...(stage.file ? { file: stage.file } : {}),
+    });
   });
 }
 
@@ -92,4 +96,10 @@ function resolveTaskStage(config: Config, task: Task, id: StageId): Stage {
     }
   }
   return invalidTasks(`${task.id} references unconfigured step ${id}`);
+}
+
+function defaultTaskEffort(config: Config, stage: Stage): Stage {
+  if (!config.execution?.orchestrator || stage.effort) return stage;
+  const effort = config.stages.find((entry) => entry.id === "planning")?.effort;
+  return validEffort(effort, stage.executor) ? { ...stage, effort } : stage;
 }

@@ -66,6 +66,7 @@ async function runStages(context: RunContext, task: Task, state: TaskState): Pro
     state.summary = await executeStage(context, state, {
       cwd: context.cwd,
       ...(context.projectCwd ? { projectCwd: context.projectCwd } : {}),
+      ...(context.repositoryPaths ? { repositoryPaths: context.repositoryPaths } : {}),
       maxRepairs: context.config.execution?.maxRepairs ?? DEFAULT_MAX_REPAIRS,
       task,
       stage,
@@ -127,7 +128,8 @@ function failTask(state: TaskState, signal: AbortSignal, error: unknown): void {
   if (!signal.aborted && error instanceof StepInputRequired) return holdTask(state, error);
   state.status = signal.aborted || isCancellation(error) ? "cancelled" : "failed";
   if (state.status !== "cancelled" && error instanceof RefactorError) state.status = "refactor";
-  setStepStatus(state, state.status);
+  if (state.steps?.find((step) => step.id === state.step)?.status !== "completed")
+    setStepStatus(state, state.status);
   state.error = state.status === "cancelled" ? "Cancelled." : errorMessage(error);
 }
 

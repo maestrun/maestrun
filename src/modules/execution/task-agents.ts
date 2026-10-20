@@ -51,7 +51,8 @@ function agentStage(stage: Stage, path: string, text: string): Stage {
   const executor = fields.get("executor") ?? modelExecutor(model) ?? stage.executor;
   if (!isExecutor(executor) || (executor === "copilot" && selected === "auto"))
     return invalidAgent(path, "executor/model");
-  const effort = fields.get("effort") ?? (executor === stage.executor ? stage.effort : undefined);
+  const effort =
+    fields.get("effort") ?? (validEffort(stage.effort, executor) ? stage.effort : undefined);
   if (effort !== undefined && !validEffort(effort, executor)) return invalidAgent(path, "effort");
   return {
     id: stage.id,
