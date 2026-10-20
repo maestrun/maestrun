@@ -58,7 +58,10 @@ async function workspaceFailure(
 }
 
 export async function runIsolatedTasks(context: RunContext, tasks: readonly Task[]): Promise<void> {
-  const repositories = await checkWorkspaceRepositories(context.cwd);
+  const repositories = await checkWorkspaceRepositories(
+    context.cwd,
+    context.config.execution?.repositories,
+  );
   const bases: RepositoryBase[] = [];
   for (const entry of repositories)
     bases.push({

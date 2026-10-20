@@ -79,3 +79,4 @@ export * from "./workspace-integration.js";
 export * from "./task-selection.js";
 export * from "./worktree-validation.js";
 export * from "./choose-run-tasks.js";
+export * from "./choose-workspace-repositories.js";

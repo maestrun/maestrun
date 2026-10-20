@@ -41,7 +41,8 @@ async function previewRun(
   tasks: readonly Task[],
 ): Promise<void> {
   const report = await orchestrationReport(input.cwd, config, tasks);
-  if (config.execution?.mode === "parallel") await checkWorkspaceRepositories(input.cwd);
+  if (config.execution?.mode === "parallel")
+    await checkWorkspaceRepositories(input.cwd, config.execution?.repositories);
   if (report.orchestration)
     input.ui.log(`Main task · Orchestrator: ${report.orchestration.strategy}`);
   for (const task of selectRunTasks(report.orchestration?.tasks ?? tasks, report, input)) {

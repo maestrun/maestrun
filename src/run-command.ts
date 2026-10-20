@@ -1,8 +1,10 @@
+import type { CommandInput } from "./shared/command.types.js";
 import type { Command } from "commander";
 import {
   runWorkflow,
   showRun,
   chooseRunTasks,
+  chooseWorkspaceRepositories,
   resumableSession,
 } from "./modules/execution/index.js";
 import type { TaskSelection } from "./modules/execution/index.js";
@@ -41,14 +43,7 @@ async function executeSelected(options: RunOptions): Promise<void> {
   await interactive(
     "run",
     async (input) => {
-      const only =
-        options.only?.split(",") ??
-        (options.skip === undefined &&
-        process.stdin.isTTY &&
-        process.stdout.isTTY &&
-        !(await resumableSession(input.cwd))
-          ? await chooseRunTasks({ ...input, tasksPath: options.tasks })
-          : undefined);
+      const only = await interactiveSelection(input, options);
       await runWithRecovery({
         ...input,
         tasksPath: options.tasks,
@@ -60,6 +55,18 @@ async function executeSelected(options: RunOptions): Promise<void> {
     },
     false,
   );
+}
+
+async function interactiveSelection(
+  input: CommandInput,
+  options: RunOptions,
+): Promise<readonly string[] | undefined> {
+  if (process.stdin.isTTY && process.stdout.isTTY && !(await resumableSession(input.cwd))) {
+    await chooseWorkspaceRepositories(input);
+    if (options.only === undefined && options.skip === undefined)
+      return chooseRunTasks({ ...input, tasksPath: options.tasks });
+  }
+  return options.only?.split(",");
 }
 
 export function registerRun(program: Command): void {

@@ -128,7 +128,8 @@ function failTask(state: TaskState, signal: AbortSignal, error: unknown): void {
   if (!signal.aborted && error instanceof StepInputRequired) return holdTask(state, error);
   state.status = signal.aborted || isCancellation(error) ? "cancelled" : "failed";
   if (state.status !== "cancelled" && error instanceof RefactorError) state.status = "refactor";
-  setStepStatus(state, state.status);
+  if (state.steps?.find((step) => step.id === state.step)?.status !== "completed")
+    setStepStatus(state, state.status);
   state.error = state.status === "cancelled" ? "Cancelled." : errorMessage(error);
 }
 

@@ -62,7 +62,8 @@ async function projectChecks(cwd: string, checks: Diagnostic[]): Promise<Config 
       ...(!config ? { nextAction: "Run maestrun init or maestrun start." } : {}),
     });
     loadLayout(cwd);
-    if (config?.execution?.mode === "parallel") await checkWorkspaceRepositories(cwd);
+    if (config?.execution?.mode === "parallel")
+      await checkWorkspaceRepositories(cwd, config.execution?.repositories);
     if (config) checks.push(...(await diagnoseFiles(cwd, config)));
     checks.push(...(await diagnoseLocks(cwd)));
   } catch (error) {

@@ -56,6 +56,7 @@ Examples:
   maestrun config background true
   maestrun config execution parallel
   maestrun config execution.concurrency 4
+  maestrun config execution.repositories '["api", "apps/web"]'
   maestrun config execution.maxRepairs 5
   maestrun config execution.orchestrator plan
   maestrun config execution.orchestrator agent

@@ -310,9 +310,16 @@ Noninteractive runs default to all tasks unless `--only` or `--skip` is supplied
 
 ### Parallel worktrees
 
-Parallel mode requires **Git 2.38+** and an initial commit in each repository. Start from a repository root, or from a folder without Git that contains repositories in its subdirectories. `doctor` and dry-run discover and validate those repositories. Discovery stops at each repository root and skips symbolic links, hidden directories, and dependency/build directories (`node_modules`, `vendor`, `dist`, `build`, `coverage`). Unresolved merges and submodules must use sequential mode.
+Parallel mode requires **Git 2.38+** and an initial commit in each repository. Start from a repository root, or from a folder without Git that contains repositories in its subdirectories. `doctor` and dry-run discover and validate those repositories. Discovery stops at each repository root and skips symbolic links, hidden directories, and dependency/build directories (`node_modules`, `vendor`, `dist`, `build`, `coverage`). Inaccessible directories and empty `.git` placeholders are skipped during discovery. The first interactive run from a parent workspace asks which repositories belong to this project and saves the selection in `execution.repositories`. The CLI and VS Code use the same selection; unselected repositories are not validated or given worktrees. Unresolved merges and submodules must use sequential mode.
 
-For a folder containing multiple repositories, each parallel task gets its own isolated workspace with a Git worktree at each original relative path (for example, `api/` and `apps/web/`). Agents can work across these repositories with the configured concurrency. No Git repository is created in the parent folder. Parent files are copied as read-only context; only changes inside the repositories are integrated automatically. Changes outside them stop integration and remain available for manual recovery. Repository branches and staging indexes stay unchanged.
+For noninteractive runs, set the repository scope first. Paths are relative to the project folder, must not overlap, and cannot be configured globally:
+
+```sh
+maestrun config execution.repositories '["api", "apps/web"]'
+maestrun config execution.repositories null # ask again on the next interactive run
+```
+
+For a folder containing multiple repositories, each parallel task gets its own isolated workspace with a Git worktree at each original relative path (for example, `api/` and `apps/web/`). Agents can work across these repositories with the configured concurrency. No Git repository is created in the parent folder. Readable files at the workspace root and along the selected repositories’ parent directories are copied as read-only context. Other directories are excluded; inaccessible source files and directories, such as database volumes owned by another user, are skipped without changing their permissions. Only changes inside the repositories are integrated automatically. Changes outside them stop integration and remain available for manual recovery. Repository branches and staging indexes stay unchanged.
 
 All repository merges for a task are prepared before applying any patches, so a merge conflict preserves the entire task for resolution and retry. Patch application across repositories is not a single transaction: interruption or an external filesystem change during application can leave some repositories integrated. Per-repository checkpoints preserve that progress; retry skips those integrations. Keep the repository layout and saved worktrees until recovery completes.
 

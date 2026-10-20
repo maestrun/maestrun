@@ -58,7 +58,7 @@ test("moving a repository after interruption blocks recovery before models run",
   await rename(join(project.cwd, "api"), join(project.cwd, "backend"));
   const execute = vi.fn();
   await expect(runWorkflow({ ...runInput(project.cwd), only: ["a"] }, execute)).rejects.toThrow(
-    "repositories changed",
+    "Repository api is missing",
   );
   expect(execute).not.toHaveBeenCalled();
 });

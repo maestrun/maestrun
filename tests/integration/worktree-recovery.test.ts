@@ -15,7 +15,7 @@ test("cancellation retains isolated edits, including when resuming in sequential
   await expect(
     runWorkflow({ ...runInput(project.cwd), signal: controller.signal }, async ({ cwd, task }) => {
       await writeFile(join(cwd, `${task.id}.txt`), "retained\n");
-      controller.abort();
+      if (task.id === "a") controller.abort();
       return "Interrupted";
     }),
   ).rejects.toThrow("Cancelled");

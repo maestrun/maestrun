@@ -52,11 +52,10 @@ export async function prepareWorkspace(
   for (const entry of workspace.repositories) await mountRepository(context, state, entry);
   const path = worktreePath(context.cwd, workspace);
   if (!workspace.contextHash) {
-    workspace.contextHash = await copyWorkspaceContext(
-      context.cwd,
-      path,
-      workspace.repositories.map((entry) => entry.path),
-    );
+    workspace.contextHash = await copyWorkspaceContext(context.cwd, path, {
+      repositories: workspace.repositories.map((entry) => entry.path),
+      scoped: Boolean(context.config.execution?.repositories),
+    });
     await context.update(state);
   }
   await copyWorktreeSettings(context, path);
