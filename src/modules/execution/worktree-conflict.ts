@@ -33,7 +33,7 @@ export async function preserveConflict(
     id: randomUUID(),
     base: merge.current,
     resolving: true,
-    retained: [...(previous.retained ?? []), { id: previous.id, base: previous.base }],
+    retained: retainedWorktrees(previous),
   };
   const path = worktreePath(context.cwd, recovery);
   const conflict = conflictIndex(merge.output);
@@ -46,4 +46,15 @@ export async function preserveConflict(
     `Integration conflict for task ${state.id}.`,
     `Resolve and test the files in ${path}, then use git add to mark them resolved and rerun the same Maestrun command from the project. Original changes remain in ${worktreePath(context.cwd, previous)}. The main project was not changed by this integration.`,
   );
+}
+
+export function retainedWorktrees(previous: TaskWorktree): NonNullable<TaskWorktree["retained"]> {
+  return [
+    ...(previous.retained ?? []),
+    {
+      id: previous.id,
+      base: previous.base,
+      ...(previous.workspace ? { workspace: previous.workspace } : {}),
+    },
+  ];
 }

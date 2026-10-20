@@ -1,3 +1,4 @@
+import type { RunSessionOptions } from "./task-selection.js";
 import { terminalUi } from "../../shared/terminal.js";
 import { isCancellation, UserError } from "../../shared/errors.js";
 import { runWorkflow } from "./run-workflow.js";
@@ -7,9 +8,10 @@ import type { RunSession } from "./run-session.repository.js";
 export async function runSessionWorker(
   id: string,
   tasksPath: string,
-  trustPlugins = false,
+  settings: boolean | RunSessionOptions = false,
 ): Promise<void> {
   const cwd = process.cwd();
+  const options = typeof settings === "boolean" ? { trustPlugins: settings } : settings;
   const controller = new AbortController();
   const session: RunSession = {
     id,
@@ -25,12 +27,11 @@ export async function runSessionWorker(
     await saveSessionFile(cwd, "session.json", JSON.stringify(session));
     process.send?.({ ready: true });
     if (process.connected) process.disconnect?.();
-    await performRun(cwd, tasksPath, { session, controller, trustPlugins });
+    await performRun(cwd, tasksPath, { session, controller, options });
     await saveSessionFile(cwd, "session.json", JSON.stringify(session));
   } finally {
     clearInterval(timer);
-    process.removeListener("SIGTERM", abort);
-    process.removeListener("SIGINT", abort);
+    for (const signal of ["SIGTERM", "SIGINT"]) process.removeListener(signal, abort);
     await releaseSession(cwd);
   }
 }
@@ -41,14 +42,14 @@ async function performRun(
   state: {
     session: RunSession;
     controller: AbortController;
-    trustPlugins: boolean;
+    options: RunSessionOptions;
   },
 ): Promise<void> {
   try {
     await runWorkflow({
       cwd,
       tasksPath,
-      trustPlugins: state.trustPlugins,
+      ...state.options,
       signal: state.controller.signal,
       ui: { ...terminalUi(state.controller.signal), log: () => {}, write: () => {} },
     });

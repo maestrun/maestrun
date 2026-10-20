@@ -6,6 +6,14 @@ import { preserveConflict } from "./worktree-conflict.js";
 import { verifyWorktree } from "./task-worktree.js";
 
 export async function integrateWorktree(context: RunContext, state: TaskState): Promise<void> {
+  const prepared = await prepareWorktreeIntegration(context, state);
+  await finishWorktreeIntegration(context, state, prepared);
+}
+
+export async function prepareWorktreeIntegration(
+  context: RunContext,
+  state: TaskState,
+): Promise<{ path: string; patch: string }> {
   if (!state.worktree) throw new Error("Missing task worktree");
   state.step = "integration";
   state.integration = "running";
@@ -14,7 +22,16 @@ export async function integrateWorktree(context: RunContext, state: TaskState): 
   state.worktree.result = await snapshotWorktree(path, state.worktree.base);
   await context.update(state);
   if (context.signal.aborted) throw new CancelError();
-  const patch = await integrationPatch(context, state, path);
+  return { path, patch: await integrationPatch(context, state, path) };
+}
+
+export async function finishWorktreeIntegration(
+  context: RunContext,
+  state: TaskState,
+  prepared: { path: string; patch: string },
+): Promise<void> {
+  if (!state.worktree) throw new Error("Missing task worktree");
+  const { path, patch } = prepared;
   await applyTaskPatch(context, patch, path);
   state.worktree.integrated = true;
   state.status = "completed";

@@ -3,7 +3,7 @@ import { loadConfig } from "../../config/index.js";
 import { snapshotFile } from "../../shared/atomic.js";
 import type { CommandInput } from "../../shared/command.types.js";
 import { CancelError, UserError } from "../../shared/errors.js";
-import { resumableSession } from "../execution/index.js";
+import { chooseRunTasks, resumableSession } from "../execution/index.js";
 import { runWithRecovery } from "./run-recovery.js";
 import { runWorkflow } from "../execution/index.js";
 import { createPlan } from "../planning/index.js";
@@ -60,5 +60,9 @@ export async function start(input: StartInput, services = SERVICES): Promise<voi
   if (input.signal.aborted) throw new CancelError();
   await services.validate({ ...input, tasksPath, dryRun: true });
   if (!(await input.ui.confirm("Start or resume task execution?", true))) return;
-  await services.run({ ...input, tasksPath });
+  const only =
+    process.stdin.isTTY && process.stdout.isTTY
+      ? await chooseRunTasks({ ...input, tasksPath })
+      : undefined;
+  await services.run({ ...input, tasksPath, ...(only ? { only } : {}) });
 }

@@ -66,6 +66,7 @@ async function runStages(context: RunContext, task: Task, state: TaskState): Pro
     state.summary = await executeStage(context, state, {
       cwd: context.cwd,
       ...(context.projectCwd ? { projectCwd: context.projectCwd } : {}),
+      ...(context.repositoryPaths ? { repositoryPaths: context.repositoryPaths } : {}),
       maxRepairs: context.config.execution?.maxRepairs ?? DEFAULT_MAX_REPAIRS,
       task,
       stage,

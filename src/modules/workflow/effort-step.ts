@@ -15,7 +15,7 @@ function effortChoices(model: Model | undefined, efforts: readonly Effort[]): re
 }
 
 export async function selectEffort(
-  context: WizardContext,
+  context: WizardContext & { effortLabel?: string },
   assignment: Assignment,
   model: Model | undefined,
 ): Promise<Effort | undefined> {
@@ -29,7 +29,7 @@ export async function selectEffort(
   const preferred =
     assignment.effort && efforts.includes(assignment.effort) ? assignment.effort : "";
   const selected = await context.ui.select(
-    `${executorLabel(assignment.executor)} effort`,
+    context.effortLabel ?? `${executorLabel(assignment.executor)} effort`,
     effortChoices(model, efforts),
     preferred,
   );

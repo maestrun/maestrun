@@ -5,10 +5,12 @@ import type { CommandInput } from "../../shared/command.types.js";
 import { CancelError, isCancellation, UserError } from "../../shared/errors.js";
 import { cleanText } from "../../shared/terminal-text.js";
 import { initialize } from "../workflow/index.js";
+import type { TaskSelection } from "../execution/index.js";
 import { runSession } from "../execution/index.js";
 import { runWorkflow } from "../execution/index.js";
 
-type RunInput = CommandInput & { tasksPath?: string; background?: boolean; trustPlugins?: boolean };
+type RunInput = CommandInput &
+  TaskSelection & { tasksPath?: string; background?: boolean; trustPlugins?: boolean };
 const SERVICES = { run: runSession, configure: initialize, validate: runWorkflow };
 
 async function evidence(input: CommandInput): Promise<void> {

@@ -40,6 +40,7 @@ export type TaskStep = {
 export type StepInput = Readonly<{
   cwd: string;
   projectCwd?: string;
+  repositoryPaths?: readonly string[];
   maxRepairs?: number;
   task: Task;
   stage: Stage;
@@ -58,7 +59,11 @@ export type TaskWorktree = {
   result?: string;
   integrated?: boolean;
   resolving?: boolean;
-  retained?: { id: string; base: string }[];
+  workspace?: { id: string; path: string };
+  repositories?: { path: string; worktree: TaskWorktree }[];
+  contextHash?: string;
+  pending?: boolean;
+  retained?: Pick<TaskWorktree, "id" | "base" | "workspace">[];
 };
 export type TaskState = {
   parentId?: string;
@@ -96,6 +101,7 @@ export type TaskState = {
   conversation?: TaskConversation;
 };
 export type RunReport = {
+  selectedTaskIds?: readonly string[];
   orchestration?: {
     strategy: "plan" | "agent";
     source: readonly Task[];

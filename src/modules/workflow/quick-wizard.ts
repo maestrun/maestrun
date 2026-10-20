@@ -6,7 +6,8 @@ import { detectExecutors, discoverModels } from "../executors/index.js";
 import { selectExecutor } from "./assignments.js";
 import { configTable } from "./config-table.js";
 import { createContext, runWizard } from "./configure-workflow.js";
-import { selectModel } from "./model-step.js";
+import { selectEffort } from "./effort-step.js";
+import { availableModels, selectModel } from "./model-step.js";
 import { orchestratedExecution } from "./execution-step.js";
 import type { WizardServices } from "./wizard.types.js";
 
@@ -77,14 +78,7 @@ async function quickSetup(
     return {
       config: await orchestratedExecution(
         input.ui,
-        {
-          ...config,
-          execution: {
-            ...config.execution,
-            mode: config.execution?.mode ?? "sequential",
-            concurrency: Math.max(2, config.execution?.concurrency ?? 2),
-          },
-        },
+        await orchestratorDefaults(input, config, options.services),
         "agent",
       ),
       prepareOrchestratorPlan: true,
@@ -117,4 +111,32 @@ async function savedQuickSetup(
     if (error instanceof BackError) throw new CancelError();
     throw error;
   }
+}
+
+async function orchestratorDefaults(
+  input: CommandInput,
+  config: Config,
+  services: WizardServices,
+): Promise<Config> {
+  const planning = config.stages.find((stage) => stage.id === "planning");
+  if (!planning) throw new Error("Missing Planning assignment");
+  const context = await createContext({ ...input, saved: config }, services);
+  const models = await availableModels(context, planning.executor);
+  const effort = await selectEffort(
+    { ...context, effortLabel: "Default orchestrator effort (agents can override)" },
+    planning,
+    models.find((model) => model.id === planning.model),
+  );
+  const assignment = { ...planning };
+  if (effort) assignment.effort = effort;
+  else delete assignment.effort;
+  return {
+    ...config,
+    stages: config.stages.map((stage) => (stage.id === "planning" ? assignment : stage)),
+    execution: {
+      ...config.execution,
+      mode: config.execution?.mode ?? "sequential",
+      concurrency: Math.max(2, config.execution?.concurrency ?? 2),
+    },
+  };
 }
